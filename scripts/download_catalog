@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+if [ "$#" -ne 1 ]; then
+	echo "usage: ./download_catalog <output-dir>"
+	exit 1
+fi
+
+# $1 is output directory
+OUTPUT_PATH=${1:-}
+START_DIR=`pwd`
+OUTPUT_DIR="$START_DIR/$OUTPUT_PATH"
+TEMP_WORK_DIR=`mktemp -d` || exit 1
+CATALOG_ARCHIVE_NAME="rdf-files.tar.bz2"
+CATALOG_URL="http://www.gutenberg.org/cache/epub/feeds/$CATALOG_ARCHIVE_NAME"
+
+finish() {
+	echo "Moving back to $START_DIR"
+	cd $START_DIR
+}
+trap finish EXIT
+
+echo "Moving into working dir $TEMP_WORK_DIR"
+cd $TEMP_WORK_DIR
+
+echo "Downloading catalog as $CATALOG_ARCHIVE_NAME"
+curl -O $CATALOG_URL
+
+if [ ! -d $OUTPUT_DIR ] 
+then
+	echo "Creating output directory $OUTPUT_DIR"
+    mkdir -p $OUTPUT_DIR
+else
+	echo "Output directory $OUTPUT_DIR already exists"
+fi
+
+echo "Unpacking archive into $OUTPUT_DIR (this will take a while)"
+tar -xjf $CATALOG_ARCHIVE_NAME -C $OUTPUT_DIR
