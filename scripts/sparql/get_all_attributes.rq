@@ -1,0 +1,6 @@
+SELECT ?id ?title ?author ?published WHERE {
+    ?book dcterms:title ?title .
+    ?book dcterms:creator/pgterms:name ?author .
+    ?book dcterms:issued ?published
+    BIND(STRAFTER(STR(?book), "ebooks/") AS ?id)
+}

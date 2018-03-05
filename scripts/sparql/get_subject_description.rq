@@ -1,0 +1,4 @@
+SELECT ?book ?title ?subject WHERE {
+    ?book dcterms:title ?title .
+    OPTIONAL { ?book dcterms:subject/rdf:value ?subject }
+}
