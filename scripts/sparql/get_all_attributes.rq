@@ -1,6 +1,6 @@
-SELECT ?id ?title ?author ?published WHERE {
+SELECT ?book ?title ?author ?published ?language WHERE {
     ?book dcterms:title ?title .
     ?book dcterms:creator/pgterms:name ?author .
-    ?book dcterms:issued ?published
-    BIND(STRAFTER(STR(?book), "ebooks/") AS ?id)
+    ?book dcterms:issued ?published .
+    ?book dcterms:language/rdf:value ?language .
 }
