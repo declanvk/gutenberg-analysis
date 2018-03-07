@@ -2,9 +2,13 @@ certifi==2018.1.18
 chardet==3.0.4
 idna==2.6
 isodate==0.6.0
+numpy==1.14.1
+pandas==0.22.0
 progressbar2==3.36.0
 pyparsing==2.2.0
+python-dateutil==2.6.1
 python-utils==2.3.0
+pytz==2018.3
 rdflib==4.2.2
 requests==2.18.4
 six==1.11.0
