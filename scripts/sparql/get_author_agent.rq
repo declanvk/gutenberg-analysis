@@ -1,3 +1,3 @@
 SELECT ?book ?author WHERE {
-    ?book dcterms:creator ?author
+    ?book dcterms:creator/pgterms:name ?author .
 }

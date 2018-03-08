@@ -1,6 +1,5 @@
-SELECT ?book ?title ?author ?published ?language WHERE {
+SELECT ?book ?title ?published ?language WHERE {
     ?book dcterms:title ?title .
-    ?book dcterms:creator/pgterms:name ?author .
     ?book dcterms:issued ?published .
     ?book dcterms:language/rdf:value ?language .
 }

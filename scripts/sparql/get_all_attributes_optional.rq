@@ -1,0 +1,7 @@
+SELECT ?book ?title ?published ?language ?author ?subject WHERE {
+    ?book dcterms:title ?title .
+    ?book dcterms:issued ?published .
+    OPTIONAL { ?book dcterms:language/rdf:value ?language } .
+    OPTIONAL { ?book dcterms:creator/pgterms:name ?author } .
+    OPTIONAL { ?book dcterms:subject/rdf:value ?subject } .
+}
