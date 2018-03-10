@@ -5,6 +5,8 @@ import os
 
 import requests
 
+_GUTENBERG_MIRROR = 'http://aleph.gutenberg.org'
+
 def _etextno_to_uri_subdirectory(etextno):
     """Returns the subdirectory that an etextno will be found in a gutenberg
     mirror. Generally, one finds the subdirectory by separating out each digit
@@ -39,8 +41,8 @@ def _format_download_uri(etextno, mirror):
 
     Raises:
         UnknownDownloadUri: If no download location can be found for the text.
-    """
-    uri_root = mirror.strip().rstrip('/')
+    """ 
+    uri_root = (mirror or _GUTENBERG_MIRROR).strip().rstrip('/')
     _check_mirror_exists(uri_root)
 
     extensions = ('.txt', '-8.txt', '-0.txt')
