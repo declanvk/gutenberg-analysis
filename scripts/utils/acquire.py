@@ -73,7 +73,3 @@ def load_etext(etextno, refresh_cache=False, mirror=None):
     text = response.text
 
     return text
-
-
-if __name__ == '__main__':
-    _main()
