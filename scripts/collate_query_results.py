@@ -45,4 +45,4 @@ if __name__ == '__main__':
         main()
     except (ValueError, FileNotFoundError) as e:
         print(e, file=sys.stderr)
-        print("usage: ./collate_query_results.py.py <catalog-directory> <output-path> <query-path>", file=sys.stderr)
+        print("usage: ./collate_query_results.py <catalog-directory> <output-path> <query-path>", file=sys.stderr)
