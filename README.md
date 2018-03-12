@@ -18,6 +18,12 @@ Create a new environment with your python environment manager, specifying Python
 conda create -n gutenberg python=3
 ```
 
+Activate the conda environment.
+
+```
+source activate gutenberg
+```
+
 Install dependencies from `scripts/requirements.txt`
 
 ```
@@ -26,11 +32,13 @@ conda install --file scripts/requirements.txt
 
 ### Acquire Data
 
-This must be run from the top level directory of the project
+Run this script from the top level directory of the project.
 
 ```
 ./scripts/run_complete_pipeline
 ```
+
+**WARNING** - This script will run for several hours. Make sure you'll be uninterrupted for an extended amount of time.
 
 ### Data Directory Layout
 
