@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+START_DIR=`pwd`
+DATA_DIR=$START_DIR/data
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+mkdir -p $DATA_DIR
+
+$SCRIPT_DIR/download_catalog $DATA_DIR/catalog/raw
+$SCRIPT_DIR/collate_query_results.py $DATA_DIR/catalog/raw $DATA_DIR/catalog/full.csv $SCRIPT_DIR/sparql/get_all_attributes_optional.rq
+$SCRIPT_DIR/extract_eligible_texts.py $DATA_DIR/catalog/full.csv $DATA_DIR/eligible_works.csv
+$SCRIPT_DIR/get_texts.py $DATA_DIR/eligible_works.csv $DATA_DIR/texts
