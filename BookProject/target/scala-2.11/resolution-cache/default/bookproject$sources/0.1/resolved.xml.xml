@@ -4,7 +4,7 @@
 		module="bookproject$sources"
 		revision="0.1"
 		status="integration"
-		publication="20180310102446"
+		publication="20180313113539"
 	/>
 	<configurations>
 		<conf name="compile" visibility="public" description=""/>
