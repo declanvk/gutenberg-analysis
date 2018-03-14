@@ -1,4 +1,4 @@
-# Instruction (without IntelliJ)
+# Installation and Usage (without IntelliJ)
 
   1. Install `sbt` server.
 
@@ -6,7 +6,7 @@
     brew install sbt
     ```
 
-  2. Compile and assemble into fat jar. Make sure to run this command at the rood to the Scala project directory.
+  2. Compile and assemble into fat jar. Make sure to run this command at the root of the Scala project directory.
 
     ```
     sbt compile assembly
