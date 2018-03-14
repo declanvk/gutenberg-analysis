@@ -27,7 +27,7 @@ source activate gutenberg
 Install dependencies from `scripts/requirements.txt`
 
 ```
-conda install --file scripts/requirements.txt
+conda install -c conda-forge --file scripts/requirements.txt
 ```
 
 ### Acquire Data
