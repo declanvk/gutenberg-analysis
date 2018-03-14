@@ -12,13 +12,7 @@ brew install sbt
 sbt compile assembly
 ```
 
-  3. Run jar file using `java`.
-
-```
-java -jar target/scala-2.11/gutenberg-analysis-assembly-0.1.jar -t ../data/texts/ -o ../data/ -s ../data/stopwords.txt -r 500
-```
-
-  4. OR if `spark-submit` is available.
+  3. Run jar file using `spark-submit`.
 
 ```
 spark-submit --class App --master local[*] target/scala-2.11/gutenberg-analysis-assembly-0.1.jar -t ../data/texts/ -o ../data/ -s ../data/stopwords.txt -r 500

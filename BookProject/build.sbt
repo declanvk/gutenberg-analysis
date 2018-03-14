@@ -1,7 +1,3 @@
-
-
-
-
 lazy val root = (project in file("."))
   .settings(
     name := "gutenberg-analysis",
@@ -15,7 +11,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.apache.spark" %% "spark-core" % "2.2.0",
+  "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
   "com.github.scopt" %% "scopt" % "3.7.0"
 )
 
