@@ -30,7 +30,6 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
-#### joe made this: http://goel.io/joe
 
 #####=== Scala ===#####
 
@@ -45,7 +44,7 @@ dist/*
 target/
 lib_managed/
 src_managed/
-project/
+project/build.properties
 
 # Scala-IDE specific
 .scala_dependencies
