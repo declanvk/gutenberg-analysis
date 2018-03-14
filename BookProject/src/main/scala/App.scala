@@ -1,8 +1,11 @@
 import java.io.File
 
 import jobs.{CreateDictionary, WordCountTexts}
+import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
+
+import util.FileSampler
 
 object App {
   def main(args: Array[String]): Unit = {
@@ -47,13 +50,35 @@ object App {
     parser.parse(args, Config()) match {
       case None => sys.exit(1)
       case Some(config) => {
-        val sparkConf = new SparkConf().setAppName("App").setMaster("local[4]")
+        val sparkConf = new SparkConf()
+          .setAppName("gutenberg-analysis")
+          .setMaster("local[4]")
         val sc = new SparkContext(sparkConf)
 
-        val createDictionaryJob = new CreateDictionary(config.textsInputDirectory, config.stopWordFile, sc)
-        val countWordsJob = new WordCountTexts(config.textsInputDirectory, createDictionaryJob, sc)
+        val hadoopConfig: Configuration = sc.hadoopConfiguration
+        hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
+        hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
 
-        countWordsJob.countWordsInTexts(countWordsJob.allFiles).collect().foreach(println)
+        // Read stopwords from file and create a broadcast variable
+        val stopwords = CreateDictionary.stopwords(config.stopWordFile, sc)
+
+        // If random sample config is set, sample specific number of files 
+        // from inputDirectory and use those to create dictionary and
+        // perform word count.
+        // Else, use every file in input directory
+        val inputFilesDescriptor: String = config.randomSampling match {
+          case Some(limit) => FileSampler.sampleDirectory(config.textsInputDirectory.getPath, limit).mkString(",")
+          case None => config.textsInputDirectory.getPath
+        }
+
+        // Create a count of all words specified by input options
+        val dictionaryWordCount = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
+        val dictionary = CreateDictionary.dictionary(dictionaryWordCount)
+
+        val filesToProcess = sc.wholeTextFiles(inputFilesDescriptor)
+        val result = WordCountTexts.countWordsInTexts(filesToProcess, dictionary, sc)
+
+        result.collect().foreach(println)
       }
     }
   }

@@ -8,14 +8,15 @@ import org.apache.spark.rdd.RDD
 
 import scala.io.Source
 
-class CreateDictionary(allTextsDirectory: File, stopwordFile: File, sc: SparkContext) {
+object CreateDictionary {
 
-  def stopwords: Broadcast[Set[String]] = sc.broadcast(Source.fromFile(stopwordFile).getLines.map(_.trim).toSet)
+  def stopwords(stopwordFile: File, sc: SparkContext): Broadcast[Set[String]] =
+    sc.broadcast(Source.fromFile(stopwordFile).getLines.map(_.trim).toSet)
 
-  def dictionaryWordCount: RDD[(String, Long)] = {
-    sc.textFile(allTextsDirectory.getPath)
+  def dictionaryWordCount(inputFileDescriptor: String, stopwords: Broadcast[Set[String]], sc: SparkContext): RDD[(String, Long)] = {
+    sc.textFile(inputFileDescriptor)
       .flatMap(_.split("\\b+")) //split all words by nonword characters
-      .map(_.trim.toLowerCase)  //set all words to lowercase
+      .map(_.trim.toLowerCase) //set all words to lowercase
       .filter(_.matches("[a-zA-Z]{3,}")) // filter out non words of length less than 3
       .filter(!stopwords.value.contains(_)) // remove all words in removable list
       .map(x => (x, 1L)).reduceByKey(_ + _) // count occurences of key
@@ -23,5 +24,6 @@ class CreateDictionary(allTextsDirectory: File, stopwordFile: File, sc: SparkCon
       .persist()
   }
 
-  def dictionary: RDD[(String, Long)] = dictionaryWordCount.keys.zipWithIndex().persist()
+  def dictionary(dictionaryWordCount: RDD[(String, Long)]): RDD[(String, Long)] =
+    dictionaryWordCount.keys.zipWithIndex().persist()
 }

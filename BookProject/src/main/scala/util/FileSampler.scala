@@ -21,5 +21,4 @@ object FileSampler {
 
     Random.shuffle(ret).take(n)
   }
-
 }
