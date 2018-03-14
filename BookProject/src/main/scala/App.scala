@@ -31,7 +31,7 @@ object App {
         .action((x, c) => c.copy(outputDirectory = x))
         .text("directory to save all results in")
 
-      opt[File]('s', "stop")
+      opt[File]('s', "stopwords")
         .required()
         .valueName("<stopwords-file>")
         .action((x, c) => c.copy(stopWordFile = x))
