@@ -1,2 +1,0 @@
-book1.txt, American Literature
-book2.txt, Irish Literature
