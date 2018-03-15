@@ -1,6 +1,6 @@
 lazy val root = (project in file("."))
   .settings(
-    name := "gutenberg-analysis",
+    name := "gutenberg-processing",
     version := "0.1",
     scalaVersion := "2.11.8",
     mainClass in Compile := Some("App")
