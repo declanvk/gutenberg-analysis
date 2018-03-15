@@ -73,7 +73,7 @@ object App {
         }
 
         //  dictionaryWordCount: RDD[(Word, WordCount)]
-        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
+        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc).persist
 
         //  dictionary: // RDD[(Word, WordIdx)]
         val dictionary: RDD[(String, Long)] = CreateDictionary.dictionary(dictionaryWordCount)
@@ -82,7 +82,7 @@ object App {
         val filesToProcess: RDD[(String, String)] = sc.wholeTextFiles(inputFilesDescriptor)
 
         //  documentVectors: RDD[(DocumentID, (WordIdx, WordCount))]
-        val documentVectors: RDD[(String, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary)
+        val documentVectors: RDD[(String, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
 
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
         val similarityMatrix: RDD[((String, String), Double)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)

@@ -23,7 +23,6 @@ object WordCountTexts {
       .map {
         case ((bookID, wordIndex), totalCount) => bookID -> (wordIndex, totalCount)
       }
-      .persist
   }
 
 }

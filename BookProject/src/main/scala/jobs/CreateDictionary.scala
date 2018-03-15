@@ -21,9 +21,8 @@ object CreateDictionary {
       .filter(!stopwords.value.contains(_)) // remove all words in removable list
       .map(x => (x, 1L)).reduceByKey(_ + _) // count occurences of key
       .filter(_._2 >= 3) //only keep words that occur at least three times
-      .persist()
   }
 
   def dictionary(dictionaryWordCount: RDD[(String, Long)]): RDD[(String, Long)] =
-    dictionaryWordCount.keys.zipWithIndex().persist()
+    dictionaryWordCount.keys.zipWithIndex()
 }

@@ -10,7 +10,6 @@ object CalculateSimilarity {
                 (a, b) => a + b
             )
             .mapValues(Math.sqrt(_))
-            .persist
     }
 
     def calculateDotProduct(documentVectors: RDD[(String, (Long, Int))]): RDD[((String, String), Long)] = {
@@ -26,7 +25,6 @@ object CalculateSimilarity {
                 }
             } // RDD[((DocumentID_A, DocumentID_B), PartialInnerProduct)]
             .reduceByKey((a, b) => a + b)
-            .persist
     }
 
     def calculateSimilarityMatrix(documentVectors: RDD[(String, (Long, Int))]): RDD[((String, String), Double)] = {
@@ -48,6 +46,5 @@ object CalculateSimilarity {
             case (documentPair, similarity) if documentPair._1 != documentPair._2 => (documentPair, similarity)
             case (documentPair, similarity) => (documentPair, 1.0)
         }
-        .persist
     }
 }
