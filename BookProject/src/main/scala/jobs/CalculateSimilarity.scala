@@ -3,7 +3,7 @@ package jobs
 import org.apache.spark.rdd.RDD
 
 object CalculateSimilarity {
-    def calculateDocumentMagnitude(documentVectors: RDD[(String, (Long, Int))]): RDD[(String, Double)] = {
+    def calculateDocumentMagnitude(documentVectors: RDD[(Int, (Long, Int))]): RDD[(Int, Double)] = {
         documentVectors
             .aggregateByKey(0)(
                 (accum, x) => accum + (x._2 * x._2),
@@ -12,7 +12,7 @@ object CalculateSimilarity {
             .mapValues(Math.sqrt(_))
     }
 
-    def calculateDotProduct(documentVectors: RDD[(String, (Long, Int))]): RDD[((String, String), Long)] = {
+    def calculateDotProduct(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Long)] = {
         val rearrangedVectors = documentVectors.map {
             case (documentID, (wordIndex, wordCount)) => (wordIndex, (documentID, wordCount.toLong))
         }.persist
@@ -27,7 +27,7 @@ object CalculateSimilarity {
             .reduceByKey((a, b) => a + b)
     }
 
-    def calculateSimilarityMatrix(documentVectors: RDD[(String, (Long, Int))]): RDD[((String, String), Double)] = {
+    def calculateSimilarityMatrix(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Double)] = {
         val magnitudes = CalculateSimilarity.calculateDocumentMagnitude(documentVectors)
         val dotProducts = CalculateSimilarity.calculateDotProduct(documentVectors)
 

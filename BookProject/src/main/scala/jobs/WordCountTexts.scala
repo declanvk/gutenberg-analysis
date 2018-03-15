@@ -6,10 +6,11 @@ import java.nio.file.Paths
 import org.apache.spark.rdd.RDD
 
 object WordCountTexts {
-  def countWordsInTexts(textFiles: RDD[(String, String)], dictionary: RDD[(String, Long)]): RDD[(String, (Long, Int))] = {
+  def countWordsInTexts(textFiles: RDD[(String, String)], dictionary: RDD[(String, Long)]): RDD[(Int, (Long, Int))] = {
     textFiles.map {
         case (filename, contents) => {
-            Paths.get(filename).getFileName.toString -> contents
+            val textFilename = Paths.get(filename).getFileName.toString
+            textFilename.substring(0, textFilename.lastIndexOf('.')).toInt -> contents
         }
       }
       .flatMapValues(_.split("\\b+"))

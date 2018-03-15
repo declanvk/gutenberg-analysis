@@ -82,10 +82,10 @@ object App {
         val filesToProcess: RDD[(String, String)] = sc.wholeTextFiles(inputFilesDescriptor)
 
         //  documentVectors: RDD[(DocumentID, (WordIdx, WordCount))]
-        val documentVectors: RDD[(String, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
+        val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
 
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
-        val similarityMatrix: RDD[((String, String), Double)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
+        val similarityMatrix: RDD[((Int, Int), Double)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
 
         // Write output to files
         val timestamp: Long = System.currentTimeMillis / 1000
