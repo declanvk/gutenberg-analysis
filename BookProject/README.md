@@ -15,5 +15,5 @@ sbt compile assembly
   3. Run jar file using `spark-submit`.
 
 ```
-spark-submit --class App --master local[*] target/scala-2.11/gutenberg-analysis-assembly-0.1.jar -t ../data/texts/ -o ../data/spark/ -s ../data/stopwords.txt -r 300
+spark-submit --class App --master local[*] target/scala-2.11/gutenberg-processing-assembly-0.1.jar -t ../data/texts/ -o ../data/spark/ -s ../data/stopwords.txt -r 300
 ```
