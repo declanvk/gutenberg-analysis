@@ -43,6 +43,11 @@ object CalculateSimilarity {
 
         dotProducts.join(cosineSimilarityDenominator).mapValues {
             case (dotProduct, pairMagnitudes) => dotProduct / pairMagnitudes
-        }.persist
+        }
+        .map {
+            case (documentPair, similarity) if documentPair._1 != documentPair._2 => (documentPair, similarity)
+            case (documentPair, similarity) => (documentPair, 1.0)
+        }
+        .persist
     }
 }
