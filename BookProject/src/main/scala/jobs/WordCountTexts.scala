@@ -3,11 +3,10 @@ package jobs
 import java.io.File
 import java.nio.file.Paths
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 object WordCountTexts {
-  def countWordsInTexts(textFiles: RDD[(String, String)], dictionary: RDD[(String, Long)], sc: SparkContext): RDD[(String, Iterable[(Long, Int)])] = {
+  def countWordsInTexts(textFiles: RDD[(String, String)], dictionary: RDD[(String, Long)]): RDD[(String, (Long, Int))] = {
     textFiles.map {
         case (filename, contents) => {
             Paths.get(filename).getFileName.toString -> contents
@@ -20,11 +19,10 @@ object WordCountTexts {
       .map {
         case (_, (book, Some(index))) =>  ((book, index), 1)
       }
-      .groupByKey // group words together
-      .map { // map each entry to key=bookID value=(wordIndex (in dict), timesWordOccurred (in book))
-        case ((bookID, wordIndex), wordCounts) => bookID -> (wordIndex -> wordCounts.sum)
+      .reduceByKey((a, b) => a + b)
+      .map {
+        case ((bookID, wordIndex), totalCount) => bookID -> (wordIndex, totalCount)
       }
-      .groupByKey  //combine data by each book identifier
       .persist
   }
 

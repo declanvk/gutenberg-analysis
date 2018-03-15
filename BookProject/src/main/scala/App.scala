@@ -1,9 +1,10 @@
 import java.io.File
 
-import jobs.{CreateDictionary, WordCountTexts}
+import jobs.{CreateDictionary, WordCountTexts, CalculateSimilarity}
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.rdd.RDD
 
 import util.FileSampler
 
@@ -62,7 +63,7 @@ object App {
         // Read stopwords from file and create a broadcast variable
         val stopwords = CreateDictionary.stopwords(config.stopWordFile, sc)
 
-        // If random sample config is set, sample specific number of files 
+        // If random sample config is set, sample specific number of files
         // from inputDirectory and use those to create dictionary and
         // perform word count.
         // Else, use every file in input directory
@@ -71,20 +72,29 @@ object App {
           case None => config.textsInputDirectory.getPath
         }
 
-        // Create a count of all words specified by input options
-        val dictionaryWordCount = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
-        val dictionary = CreateDictionary.dictionary(dictionaryWordCount)
+        //  dictionaryWordCount: RDD[(Word, WordCount)]
+        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
 
-        val filesToProcess = sc.wholeTextFiles(inputFilesDescriptor)
-        val textWordCounts = WordCountTexts.countWordsInTexts(filesToProcess, dictionary, sc)
+        //  dictionary: // RDD[(Word, WordIdx)]
+        val dictionary: RDD[(String, Long)] = CreateDictionary.dictionary(dictionaryWordCount)
 
+        //  filesToProcess: RDD[(Filename, FileContents)]
+        val filesToProcess: RDD[(String, String)] = sc.wholeTextFiles(inputFilesDescriptor)
+
+        //  documentVectors: RDD[(DocumentID, (WordIdx, WordCount))]
+        val documentVectors: RDD[(String, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary)
+
+        //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
+        val similarityMatrix: RDD[((String, String), Double)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
+
+        // Write output to files
         val timestamp: Long = System.currentTimeMillis / 1000
         val stampedOutputDir = config.outputDirectory.toPath.resolve(s"run-${timestamp}").toFile
         stampedOutputDir.mkdirs
 
-        // Write output to files
         dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
-        textWordCounts.saveAsTextFile(stampedOutputDir.toPath.resolve("textWordCounts").toString)
+        documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
+        similarityMatrix.saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
       }
     }
   }
