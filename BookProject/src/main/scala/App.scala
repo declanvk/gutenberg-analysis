@@ -1,11 +1,10 @@
 import java.io.File
 
-import jobs.{CreateDictionary, WordCountTexts, CalculateSimilarity}
+import jobs.{CalculateSimilarity, CreateDictionary, WordCountTexts}
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
-
 import util.FileSampler
 
 object App {
@@ -68,9 +67,18 @@ object App {
         // perform word count.
         // Else, use every file in input directory
         val inputFilesDescriptor: String = config.randomSampling match {
-          case Some(limit) => FileSampler.sampleDirectory(config.textsInputDirectory.getPath, limit).mkString(",")
+          case Some(limit) => {
+            val listingFile = sc.textFile(config.textsInputDirectory.getPath + "/texts_listing.txt")  //get listing file
+
+            listingFile
+              .sample(withReplacement = false, limit/listingFile.count().toDouble)
+              .map(x => config.textsInputDirectory.getPath + "/texts/" + x)
+              .collect().mkString(",")
+
+          }
           case None => config.textsInputDirectory.getPath
         }
+
 
         //  dictionaryWordCount: RDD[(Word, WordCount)]
         val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc).persist
