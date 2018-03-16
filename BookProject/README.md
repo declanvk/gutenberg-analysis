@@ -30,7 +30,7 @@ spark-submit --class main.App --master local[*] target/scala-2.11/gutenberg-proc
 export AWS_ACCESS_KEY_ID=<....>
 export AWS_SECRET_ACCESS_KEY=<....>
 
-spark-submit --class main.App --master local[*] target/scala-2.11/gutenberg-processing-assembly-0.1.jar \
+spark-submit --class main.App --master yarn target/scala-2.11/gutenberg-processing-assembly-0.1.jar \
     -l "s3a://english-gutenberg-texts/texts_listing.txt" \
     -t s3a://english-gutenberg-texts/texts/ \
     -o ../data/spark/ \

@@ -64,7 +64,6 @@ object App {
       case Some(config) => {
         val sparkConf = new SparkConf()
           .setAppName("gutenberg-analysis")
-          .setMaster("local[4]")
         val sc = new SparkContext(sparkConf)
 
         val hadoopConfig: Configuration = sc.hadoopConfiguration
