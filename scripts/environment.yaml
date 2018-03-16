@@ -1,0 +1,118 @@
+name: gutenberg
+channels:
+- conda-forge
+- defaults
+dependencies:
+- appnope=0.1.0=py36_0
+- bleach=2.1.3=py_0
+- decorator=4.2.1=py36_0
+- entrypoints=0.2.3=py36_1
+- html5lib=1.0.1=py_0
+- ipykernel=4.8.2=py36_0
+- ipython=6.2.1=py36_1
+- ipython_genutils=0.2.0=py36_0
+- jedi=0.11.1=py36_0
+- jsonschema=2.6.0=py36_1
+- jupyter_client=5.2.3=py36_0
+- jupyter_core=4.4.0=py_0
+- jupyterlab=0.31.12=py36_1
+- jupyterlab_launcher=0.10.5=py36_0
+- libsodium=1.0.15=1
+- mistune=0.8.3=py_0
+- nbconvert=5.3.1=py_1
+- nbformat=4.4.0=py36_0
+- notebook=5.4.0=py36_0
+- pandoc=2.1.2=0
+- pandocfilters=1.4.1=py36_0
+- parso=0.1.1=py_0
+- pexpect=4.4.0=py36_0
+- pickleshare=0.7.4=py36_0
+- prompt_toolkit=1.0.15=py36_0
+- ptyprocess=0.5.2=py36_0
+- pygments=2.2.0=py36_0
+- pyzmq=17.0.0=py36_3
+- send2trash=1.5.0=py_0
+- simplegeneric=0.8.1=py36_0
+- terminado=0.8.1=py36_0
+- testpath=0.3.1=py36_0
+- traitlets=4.3.2=py36_0
+- wcwidth=0.1.7=py36_0
+- webencodings=0.5=py36_0
+- zeromq=4.2.3=2
+- attrs=17.4.0=py36_0
+- bokeh=0.12.14=py36_0
+- ca-certificates=2017.08.26=ha1e5d58_0
+- certifi=2018.1.18=py36_0
+- click=6.7=py36hec950be_0
+- cloudpickle=0.5.2=py36_1
+- dask-core=0.17.1=py36_0
+- distributed=1.21.2=py36_0
+- heapdict=1.0.0=py36_2
+- intel-openmp=2018.0.0=h8158457_8
+- jinja2=2.10=py36hd36f9c5_0
+- libcxx=4.0.1=h579ed51_0
+- libcxxabi=4.0.1=hebd6815_0
+- libedit=3.1=hb4e282d_0
+- libffi=3.2.1=h475c297_4
+- libgfortran=3.0.1=h93005f0_2
+- locket=0.2.0=py36hca03003_1
+- markupsafe=1.0=py36h3a1e703_1
+- mkl=2018.0.1=hfbd8650_4
+- msgpack-python=0.5.5=py36h04f5b5a_0
+- ncurses=6.0=hd04f020_2
+- numpy=1.14.1=py36ha726252_2
+- openssl=1.0.2n=hdbc3d79_0
+- packaging=17.1=py36_0
+- pandas=0.22.0=py36h0a44026_0
+- partd=0.3.8=py36hf5c4cb8_0
+- pip=9.0.1=py36_5
+- pluggy=0.6.0=py36hb1d0581_0
+- progressbar2=3.35.2=py36_0
+- psutil=5.4.3=py36h1de35cc_0
+- py=1.5.2=py36ha69170d_0
+- pyparsing=2.2.0=py36hb281f35_0
+- pytest=3.4.2=py36_0
+- pytest-runner=4.0=py36_0
+- python=3.6.4=hc167b69_1
+- python-dateutil=2.6.1=py36h86d2abb_1
+- python-utils=2.3.0=py36_0
+- pytz=2018.3=py36_0
+- pyyaml=3.12=py36h2ba1e63_1
+- readline=7.0=hc1231fa_4
+- setuptools=38.5.1=py36_0
+- six=1.11.0=py36h0e22d5e_1
+- sortedcontainers=1.5.9=py36_0
+- sqlite=3.22.0=h3efe00b_0
+- tblib=1.3.2=py36hda67792_0
+- tk=8.6.7=h35a86e2_3
+- toolz=0.9.0=py36_0
+- tornado=5.0=py36_0
+- wheel=0.30.0=py36h5eb2c71_1
+- xz=5.2.3=h0278029_2
+- yaml=0.1.7=hc338f04_2
+- zict=0.1.3=py36h71da714_0
+- zlib=1.2.11=hf3cbc9b_2
+- pip:
+  - chardet==3.0.4
+  - cycler==0.10.0
+  - dask==0.17.1
+  - docopt==0.6.2
+  - gitdb==0.6.4
+  - gitpython==1.0.2
+  - idna==2.6
+  - ipython-genutils==0.2.0
+  - isodate==0.6.0
+  - joe==0.0.7
+  - jupyter-client==5.2.3
+  - jupyter-core==4.4.0
+  - jupyterlab-launcher==0.10.5
+  - kiwisolver==1.0.1
+  - matplotlib==2.2.0
+  - prompt-toolkit==1.0.15
+  - rdflib==4.2.2
+  - requests==2.18.4
+  - smmap==0.9.0
+  - sparqlwrapper==1.8.1
+  - urllib3==1.22
+prefix: /Users/dev/miniconda3/envs/gutenberg
+
