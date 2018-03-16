@@ -15,19 +15,13 @@ It is recommended to use some form of python environment manager such as `conda`
 Create a new environment with your python environment manager, specifying Python 3.
 
 ```
-conda create -n gutenberg python=3
+conda env create -f script/environment.yaml
 ```
 
 Activate the conda environment.
 
 ```
 source activate gutenberg
-```
-
-Install dependencies from `scripts/requirements.txt`
-
-```
-conda install -c conda-forge --file scripts/requirements.txt
 ```
 
 ### Acquire Data
