@@ -11,6 +11,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.apache.hadoop" % "hadoop-aws" % "2.7.3",
   "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
   "com.github.scopt" %% "scopt" % "3.7.0"
 )

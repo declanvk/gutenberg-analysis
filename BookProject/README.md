@@ -14,6 +14,27 @@ sbt compile assembly
 
   3. Run jar file using `spark-submit`.
 
+**LOCALLY**
 ```
-spark-submit --class App --master local[*] target/scala-2.11/gutenberg-processing-assembly-0.1.jar -t ../data/texts/ -o ../data/spark/ -s ../data/stopwords.txt -r 300
+spark-submit --class main.App --master local[*] target/scala-2.11/gutenberg-processing-assembly-0.1.jar \
+    -l ../data/texts_listing.txt
+    -t ../data/texts/ \
+    -o ../data/spark/ \
+    -s ../data/stopwords.txt \
+    -r 300 \
+    -m Local
+```
+
+**ON CLUSTER**
+```
+export AWS_ACCESS_KEY_ID=<....>
+export AWS_SECRET_ACCESS_KEY=<....>
+
+spark-submit --class main.App --master local[*] target/scala-2.11/gutenberg-processing-assembly-0.1.jar \
+    -l "s3a://english-gutenberg-texts/texts_listing.txt" \
+    -t s3a://english-gutenberg-texts/texts/ \
+    -o ../data/spark/ \
+    -s s3a://english-gutenberg-texts/stopwords.txt \
+    -r 30 \
+    -m S3
 ```

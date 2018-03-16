@@ -1,5 +1,7 @@
 package jobs
 
+import main.App.DataMode
+
 import java.io.File
 
 import org.apache.spark.SparkContext
@@ -10,8 +12,13 @@ import scala.io.Source
 
 object CreateDictionary {
 
-  def stopwords(stopwordFile: File, sc: SparkContext): Broadcast[Set[String]] =
-    sc.broadcast(Source.fromFile(stopwordFile).getLines.map(_.trim).toSet)
+  def stopwords(stopwordFile: String, sc: SparkContext, dataMode: DataMode.Value): Broadcast[Set[String]] = {
+    if (dataMode == DataMode.S3) {
+      sc.broadcast(sc.textFile(stopwordFile.toString).map(_.trim).collect.toSet)
+    } else {
+      sc.broadcast(Source.fromFile(stopwordFile).getLines.map(_.trim).toSet)
+    }
+  }
 
   def dictionaryWordCount(inputFileDescriptor: String, stopwords: Broadcast[Set[String]], sc: SparkContext): RDD[(String, Long)] = {
     sc.textFile(inputFileDescriptor)
