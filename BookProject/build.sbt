@@ -1,6 +1,6 @@
 lazy val root = (project in file("."))
   .settings(
-    name := "gutenberg-analysis",
+    name := "gutenberg-processing",
     version := "0.1",
     scalaVersion := "2.11.8",
     mainClass in Compile := Some("App")
@@ -11,6 +11,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.apache.hadoop" % "hadoop-aws" % "2.7.3",
   "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
   "com.github.scopt" %% "scopt" % "3.7.0"
 )
