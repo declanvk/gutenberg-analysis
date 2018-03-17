@@ -127,15 +127,15 @@ object App {
         stampedOutputDir.mkdirs
 
         if (config.artifacts.contains(Artifacts.Dictionary)) {
-          dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)  
+          dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
         }
-        
+
         if (config.artifacts.contains(Artifacts.DocumentVectors)) {
-          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)  
+          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
         }
-        
+
         if (config.artifacts.contains(Artifacts.SimilarityMatrix)) {
-          similarityMatrix.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)          
+          similarityMatrix.saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
         }
 
       }
