@@ -212,7 +212,7 @@ SUBJECT_MAPPINGS = {
     'Z': 'Books (general) writing, Book industries, Libraries, and Bibliography'
 }
 
-def extract_eligible_texts(catalog_file, output_file):
+def extract_eligible_texts(catalog_file, main_output_file, labels_output_file):
     catalog = pd.read_csv(catalog_file)
 
     # Transform catalog columns
@@ -248,28 +248,31 @@ def extract_eligible_texts(catalog_file, output_file):
     # Add subject frequency, and then take most frequently occuring subject for each book
     eligible_works_freq = eligible_works.join(subject_frequency, on='subject', how='left', rsuffix='_freq').sort_values(['book', 'subject_freq'], ascending=[True, False])
     reduced_works = eligible_works_freq.groupby('book').first()
+    multiple_subjects_works = eligible_works_freq[['book', 'subject']]
 
     # Write to output
-    reduced_works.to_csv(output_file)
+    reduced_works.to_csv(main_output_file)
+    multiple_subjects_works.to_csv(labels_output_file, index=False)
 
 import sys
 
 def main():
     argc = len(sys.argv)
-    if argc != 3:
+    if argc != 4:
         raise ValueError(f"Illegal number of arguments passed, {argc}")
 
     catalog_file = Path.cwd() / Path(sys.argv[1])
     output_file = Path.cwd() / Path(sys.argv[2])
+    multiple_labels_output_file = Path.cwd() / Path(sys.argv[3])
 
     if not catalog_file.exists():
         raise FileNotFoundError("Input file does not exist")
 
-    extract_eligible_texts(catalog_file, output_file)
+    extract_eligible_texts(catalog_file, output_file, multiple_labels_output_file)
 
 if __name__ == '__main__':
     try:
         main()
     except (ValueError, FileNotFoundError) as e:
         print(e, file=sys.stderr)
-        print("usage: ./extract_eligible_texts.py <catalog-file> <output-file>", file=sys.stderr)
+        print("usage: ./extract_eligible_texts.py <catalog-file> <main-output-file> <labels-output-file>", file=sys.stderr)
