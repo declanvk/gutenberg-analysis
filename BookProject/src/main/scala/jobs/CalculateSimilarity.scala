@@ -33,14 +33,17 @@ object CalculateSimilarity {
 
         val cosineSimilarityDenominator = magnitudes
             .cartesian(magnitudes) // RDD[((DocumentID_A, DocumentMagnitude_A), (DocumentID_B, DocumentMagnitude_B))]
+            .filter {
+                case (document_A, document_B) => document_A._1 < document_B._1
+            }
             .map {
                 case ((documentID_A, documentMagnitude_A), (documentID_B, documentMagnitude_B)) => {
                     (documentID_A, documentID_B) -> (documentMagnitude_A * documentMagnitude_B)
                 }
             }
 
-        dotProducts.join(cosineSimilarityDenominator).mapValues {
-            case (dotProduct, pairMagnitudes) => dotProduct / pairMagnitudes
+        cosineSimilarityDenominator.join(dotProducts).mapValues {
+            case (pairMagnitudes, dotProduct) => dotProduct / pairMagnitudes
         }
         .map {
             case (documentPair, similarity) if documentPair._1 != documentPair._2 => (documentPair, similarity)
