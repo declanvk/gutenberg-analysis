@@ -57,6 +57,13 @@ object App {
         .valueName("<number-random-samples>")
         .action((x, c) => c.copy(randomSampling = Some(x)))
         .text("optional random sampling to limit")
+
+      opt[Seq[Artifacts.Value]]('a', "artifacts")
+        .required()
+        .valueName("<artifact1>,<artifact2>,...")
+        .action((x,c) => c.copy(artifacts = x.toSet) )
+        .text("artifacts to output")
+
     }
 
     parser.parse(args, Config()) match {
@@ -119,9 +126,18 @@ object App {
         val stampedOutputDir = Paths.get(config.outputDirectory).resolve(s"run-${timestamp}").toFile
         stampedOutputDir.mkdirs
 
-        dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
-        documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
-        similarityMatrix.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
+        if (config.artifacts.contains(Artifacts.Dictionary)) {
+          dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)  
+        }
+        
+        if (config.artifacts.contains(Artifacts.DocumentVectors)) {
+          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)  
+        }
+        
+        if (config.artifacts.contains(Artifacts.SimilarityMatrix)) {
+          similarityMatrix.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)          
+        }
+
       }
     }
   }
@@ -131,11 +147,18 @@ object App {
                     textsListing: String = "",
                     outputDirectory: String = "",
                     dataMode: DataMode.Value = DataMode.Local,
-                    randomSampling: Option[Int] = None)
+                    randomSampling: Option[Int] = None,
+                    artifacts: Set[Artifacts.Value] = Set.empty)
 
   object DataMode extends Enumeration {
     val Local, S3 = Value
   }
 
   implicit val dataModeRead: scopt.Read[DataMode.Value] = scopt.Read.reads(DataMode withName _)
+
+  object Artifacts extends Enumeration {
+    val Dictionary, DocumentVectors, SimilarityMatrix = Value
+  }
+
+  implicit val artifactsRead: scopt.Read[Artifacts.Value] = scopt.Read.reads(Artifacts withName _)
 }
