@@ -91,7 +91,7 @@ object App {
             val listingFile = sc.textFile(config.textsListing)
 
             listingFile
-              .sample(withReplacement = false, limit/listingFile.count().toDouble)
+              .sample(withReplacement = false, limit/listingFile.count().toFloat)
               .map(x => config.textsInputDirectory + x)
               .collect()
               .mkString(",")
@@ -112,7 +112,7 @@ object App {
         val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
 
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
-        val similarityMatrix: RDD[((Int, Int), Double)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
+        val similarityMatrix: RDD[((Int, Int), Float)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
 
         // Write output to files
         val timestamp: Long = System.currentTimeMillis / 1000

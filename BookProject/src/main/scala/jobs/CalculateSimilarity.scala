@@ -3,13 +3,13 @@ package jobs
 import org.apache.spark.rdd.RDD
 
 object CalculateSimilarity {
-    def calculateDocumentMagnitude(documentVectors: RDD[(Int, (Long, Int))]): RDD[(Int, Double)] = {
+    def calculateDocumentMagnitude(documentVectors: RDD[(Int, (Long, Int))]): RDD[(Int, Float)] = {
         documentVectors
             .aggregateByKey(0)(
                 (accum, x) => accum + (x._2 * x._2),
                 (a, b) => a + b
             )
-            .mapValues(Math.sqrt(_))
+            .mapValues(x => Math.sqrt(x.toDouble).toFloat)
     }
 
     def calculateDotProduct(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Long)] = {
@@ -27,7 +27,7 @@ object CalculateSimilarity {
             .reduceByKey((a, b) => a + b)
     }
 
-    def calculateSimilarityMatrix(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Double)] = {
+    def calculateSimilarityMatrix(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Float)] = {
         val magnitudes = CalculateSimilarity.calculateDocumentMagnitude(documentVectors)
         val dotProducts = CalculateSimilarity.calculateDotProduct(documentVectors)
 
@@ -44,7 +44,7 @@ object CalculateSimilarity {
         }
         .map {
             case (documentPair, similarity) if documentPair._1 != documentPair._2 => (documentPair, similarity)
-            case (documentPair, similarity) => (documentPair, 1.0)
+            case (documentPair, similarity) => (documentPair, 1.0f)
         }
     }
 }
