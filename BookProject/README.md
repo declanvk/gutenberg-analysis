@@ -22,7 +22,8 @@ spark-submit --class main.App --master local[*] target/scala-2.11/gutenberg-proc
     -o ../data/spark/ \
     -s ../data/stopwords.txt \
     -r 300 \
-    -m Local
+    -m Local \
+    -a Dictionary,DocumentVectors,SimilarityMatrix
 ```
 
 **ON CLUSTER**
@@ -36,5 +37,6 @@ spark-submit --class main.App --master yarn target/scala-2.11/gutenberg-processi
     -o ../data/spark/ \
     -s s3a://english-gutenberg-texts/stopwords.txt \
     -r 30 \
-    -m S3
+    -m S3 \
+    -a Dictionary,DocumentVectors,SimilarityMatrix
 ```
