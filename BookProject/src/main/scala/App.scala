@@ -77,14 +77,14 @@ object App {
 
         val filesToProcess = sc.wholeTextFiles(inputFilesDescriptor)
         val textWordCounts = WordCountTexts.countWordsInTexts(filesToProcess, dictionary, sc)
+        val uniqueWordsCounts = textWordCounts.map{ case (x, y) => (y.size)}.coalesce(1)
 
         val timestamp: Long = System.currentTimeMillis / 1000
         val stampedOutputDir = config.outputDirectory.toPath.resolve(s"run-${timestamp}").toFile
         stampedOutputDir.mkdirs
 
         // Write output to files
-        dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
-        textWordCounts.saveAsTextFile(stampedOutputDir.toPath.resolve("textWordCounts").toString)
+        uniqueWordsCounts.saveAsTextFile(stampedOutputDir.toPath.resolve("uniqueWordsCounts").toString)
       }
     }
   }
