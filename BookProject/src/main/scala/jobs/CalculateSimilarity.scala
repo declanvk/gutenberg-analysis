@@ -19,6 +19,9 @@ object CalculateSimilarity {
 
         rearrangedVectors
             .join(rearrangedVectors) // RDD[(WordIdx, ((DocumentID_A, WordCount_A), (DocumentID_B, WordCount_B)))]
+            .filter {
+                case (_, (document_A, document_B)) => document_A._1 < document_B._1
+            }
             .map {
                 case (wordIndex, ((documentID_A, wordCount_A), (documentID_B, wordCount_B))) => {
                     (documentID_A, documentID_B) -> (wordCount_A * wordCount_B)
@@ -49,5 +52,12 @@ object CalculateSimilarity {
             case (documentPair, similarity) if documentPair._1 != documentPair._2 => (documentPair, similarity)
             case (documentPair, similarity) => (documentPair, 1.0f)
         }
+    }
+
+    def findKNearest(similarityMatrix: RDD[((Int, Int), Float)]): RDD[(Int, List[(Int, Float)])] = {
+       similarityMatrix
+          .flatMap { case ((docID_A, docID_B), simFact) => List((docID_A, (docID_B, simFact)), (docID_B, (docID_A, simFact)))}
+          .groupByKey()
+          .map { case(docID, list) => (docID, list.toList.sortWith((x,y) => x._2 > y._2).take(10)) }
     }
 }

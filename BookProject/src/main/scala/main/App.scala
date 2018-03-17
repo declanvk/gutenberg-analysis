@@ -114,6 +114,9 @@ object App {
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
         val similarityMatrix: RDD[((Int, Int), Float)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
 
+
+        val kNearest: RDD[(Int, List[(Int, Float)])] = CalculateSimilarity.findKNearest(similarityMatrix)
+
         // Write output to files
         val timestamp: Long = System.currentTimeMillis / 1000
         val stampedOutputDir = Paths.get(config.outputDirectory).resolve(s"run-${timestamp}").toFile
@@ -122,6 +125,7 @@ object App {
         dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
         documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
         similarityMatrix.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
+        kNearest.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("kNearest").toString)
       }
     }
   }
