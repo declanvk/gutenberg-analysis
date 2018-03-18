@@ -1,25 +1,23 @@
 package util
 
+import java.io.File
+
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
+import org.apache.spark.broadcast.Broadcast
 
 object UniqueWordsText {
-    def countUniqueWords(textFile: String, dictionary: RDD[(String, Long)], sc: SparkContext): Int = {
-      val text = sc.textFile(textFile)
-      val words = text.flatMap(_.split("\\b+"))
-        .map(filePair => filePair.trim.toLowerCase -> 1)  //remove spacings, set to lowercase. Change so word is the key
-        .leftOuterJoin(dictionary)  // join dictionary words and words in text
-        .filter(_._2._2.isDefined) // Remove words not in the dictionary
-        .map {
-        case (_, (book, Some(index))) =>  ((book, index), 1)
-      }
-        .groupByKey // group words together
-        .map { // map each entry to key=bookID value=(wordIndex (in dict), timesWordOccurred (in book))
-        case ((bookID, wordIndex), wordCounts) => bookID -> (wordIndex -> wordCounts.sum)
-      }
-        .groupByKey  //combine data by each book identifier
+    def countUniqueWords(inputFileDescriptor: File, stopwords: Broadcast[Set[String]], sc: SparkContext): Int = {
+      val words = sc.textFile(inputFileDescriptor.toString)
+        .flatMap(_.split("\\b+")) //split all words by nonword characters
+        .map(_.trim.toLowerCase) //set all words to lowercase
+        .filter(_.matches("[a-zA-Z]{3,}")) // filter out non words of length less than 3
+        .filter(!stopwords.value.contains(_)) // remove all words in removable list
+        .map(x => (x, 1L)).reduceByKey(_ + _) // count occurences of key
+        .filter(_._2 >= 3) //only keep words that occur at least three times //combine data by each book identifier
         .collect()
 
       words.length
     }
+
+
 }
