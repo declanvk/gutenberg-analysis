@@ -1,0 +1,12 @@
+Gutenberg Final Project - CSC 369
+
+Experimental results & Hadoop justification.
+
+
+<<INSERT RESULTS>>
+
+Hadoop was necessary for us because of the sheer size of our data set. The operations
+we conducted caused the data set to increase in size at an O(n^2) rate. For us, this
+means that reading through all the books would be impossible to complete on a single
+machine. In fact, according to our calculations, using the current cluster to parse
+through 35,000 books (the original data set), it would take 240 days to complete.

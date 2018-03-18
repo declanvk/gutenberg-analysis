@@ -1,0 +1,25 @@
+Gutenberg Final Project - CSC 369
+
+About the internals.
+
+
+The data set we chose was a portion of the books available from the Project Gutenberg
+website. We chose books that belonged to genres that had the greatest amounts of books.
+
+To parse this data set, we began by reading each book in our sample set and generating
+a dictionary with the words we encountered. We filtered out words that were too small,
+numerical literals, or only appeared a few times throughout the data set. We then associated
+each word in a dictionary with an index.
+
+After generating the dictionary, we read each book again, this time keeping the book's
+name as a unique identifier. We then found every word in each book, and used the dictionary
+to filter out unwanted words (words that did not occur in the dictionary), and replace
+the string with the associated index. The end result is a single key/value pair for each
+book, where the key is the book identifier, and the value is a list tuples containing
+the word index and the number of times it occurred in the book.
+
+We used these generated vectors to then compute the cosine distance between each book vector
+(where books having an exact word pattern match would be 1, and 0 if no similarities occurred).
+Using these values, for each book in the data set, we found the 10 most similar books. With
+these 10 books, we used their subject type/genre combined with the similarity factor to determine
+the most likely subject type/genre of the given book.

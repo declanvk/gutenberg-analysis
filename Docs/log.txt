@@ -1,0 +1,11 @@
+Gutenberg Final Project - CSC 369
+
+Work log.
+
+
+Maxence Weyrich (approx. 12hr)
+   - Parsing books to make the dictionary
+   - Using dictionary to generate book vectors
+   - Finding the K-nearest neighbors
+   - Predicting subject based neighbors & similarity factor
+   - Using sampler file to choose which books to read
