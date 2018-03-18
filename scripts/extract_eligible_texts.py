@@ -252,7 +252,7 @@ def extract_eligible_texts(catalog_file, main_output_file, labels_output_file):
 
     # Write to output
     reduced_works.to_csv(main_output_file)
-    multiple_subjects_works.to_csv(labels_output_file, index=False)
+    multiple_subjects_works.to_csv(labels_output_file, index=False, header=False)
 
 import sys
 
