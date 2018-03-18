@@ -76,15 +76,6 @@ object App {
         val hadoopConfig: Configuration = sc.hadoopConfiguration
         hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
         hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
-        hadoopConfig.set("fs.s3a.impl", classOf[org.apache.hadoop.fs.s3a.S3AFileSystem].getName)
-
-        if (config.dataMode == DataMode.S3) {
-          val accessKeyID = System.getenv("AWS_ACCESS_KEY_ID")
-          val secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY")
-
-          hadoopConfig.set("fs.s3a.access.key", accessKeyID)
-          hadoopConfig.set("fs.s3a.secret.key", secretAccessKey)
-        }
 
         // Read stopwords from file and create a broadcast variable
         val stopwords = CreateDictionary.stopwords(config.stopWordFile, sc, config.dataMode)
@@ -124,26 +115,20 @@ object App {
 
         val kNearest: RDD[(Int, List[(Int, Float)])] = CalculateSimilarity.findKNearest(similarityMatrix)
 
-        // Write output to files
-        val timestamp: Long = System.currentTimeMillis / 1000
-        val stampedOutputDir = Paths.get(config.outputDirectory).resolve(s"run-${timestamp}").toFile
-        stampedOutputDir.mkdirs
-
-
         if (config.artifacts.contains(Artifacts.Dictionary)) {
-          dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
+          dictionaryWordCount.saveAsTextFile(config.outputDirectory + "dictionaryWordCount/")
         }
 
         if (config.artifacts.contains(Artifacts.DocumentVectors)) {
-          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
+          documentVectors.groupByKey.saveAsTextFile(config.outputDirectory + "documentVectors/")
         }
 
         if (config.artifacts.contains(Artifacts.SimilarityMatrix)) {
-          similarityMatrix.saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
+          similarityMatrix.saveAsTextFile(config.outputDirectory + "similarityMatrix/")
         }
 
         if (config.artifacts.contains(Artifacts.kNearest)) {
-          kNearest.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("kNearest").toString)
+          kNearest.coalesce(1).saveAsTextFile(config.outputDirectory + "kNearest/")
         }
       }
     }
