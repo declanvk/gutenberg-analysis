@@ -54,10 +54,32 @@ object CalculateSimilarity {
         }
     }
 
-    def findKNearest(similarityMatrix: RDD[((Int, Int), Float)]): RDD[(Int, List[(Int, Float)])] = {
+    def findKNearest(similarityMatrix: RDD[((Int, Int), Float)], labelFile: RDD[(Int, Iterable[String])]): RDD[(Int, List[(Iterable[String], Float)])] = {
        similarityMatrix
           .flatMap { case ((docID_A, docID_B), simFact) => List((docID_A, (docID_B, simFact)), (docID_B, (docID_A, simFact)))}
+          .map { case (docID_A, (docID_B, simFact)) =>  (docID_B, (docID_A, simFact))}
+          .join(labelFile)
+          .map { case (_, ((docID_A, simFact), (subjects))) => (docID_A, (subjects, simFact))}
           .groupByKey()
           .map { case(docID, list) => (docID, list.toList.sortWith((x,y) => x._2 > y._2).take(10)) }
+    }
+
+    def findSubjectMatch(kNearest: RDD[(Int, List[(Iterable[String], Float)])]): RDD[(Int, List[(String, Float)])] = {
+        kNearest
+          .map {
+              case (docID, list) => (docID, list.flatMap(x => {
+                  val fact = x._2
+                  x._1.map(name => (name, fact))
+              }))
+          }
+          .map {
+              case (docID, list) => (docID, list.groupBy(x => x._1)
+                .map {
+                    case (key, values) => (key, values.map(_._2).sum / 10)
+                }
+                .toList
+                .sortWith((a, b) => a._2 > b._2)
+              )
+          }
     }
 }

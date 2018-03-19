@@ -46,6 +46,12 @@ object App {
         .action((x, c) => c.copy(stopWordFile = x))
         .text("file containing stopwords")
 
+      opt[String]('b', "labels")
+        .required()
+        .valueName("<labels-file>")
+        .action((x, c) => c.copy(labelsFile = x))
+        .text("file containing bookIDs and their subjects")
+
       opt[DataMode.Value]('m', "mode")
         .required()
         .valueName("<data-mode>")
@@ -97,6 +103,8 @@ object App {
           case None => config.textsInputDirectory
         }
 
+        val labelFile = sc.textFile(config.labelsFile).map(x => (x.split(",", 2)(0).toInt, x.split(",", 2)(1))).groupByKey()
+
         //  dictionaryWordCount: RDD[(Word, WordCount)]
         val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
 
@@ -113,7 +121,9 @@ object App {
         val similarityMatrix: RDD[((Int, Int), Float)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
 
 
-        val kNearest: RDD[(Int, List[(Int, Float)])] = CalculateSimilarity.findKNearest(similarityMatrix)
+        val kNearest: RDD[(Int, List[(Iterable[String], Float)])] = CalculateSimilarity.findKNearest(similarityMatrix, labelFile)
+
+        val results: RDD[(Int, List[(String, Float)])] = CalculateSimilarity.findSubjectMatch(kNearest)
 
         val timestamp: Long = System.currentTimeMillis / 1000
         val stampedOutputDir = config.outputDirectory + s"run-${timestamp}/"
@@ -133,6 +143,11 @@ object App {
         if (config.artifacts.contains(Artifacts.kNearest)) {
           kNearest.coalesce(1).saveAsTextFile(stampedOutputDir + "kNearest/")
         }
+
+        if (config.artifacts.contains(Artifacts.Results)) {
+          results.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("results").toString)
+        }
+
       }
     }
   }
@@ -141,6 +156,7 @@ object App {
                     textsInputDirectory: String = "",
                     textsListing: String = "",
                     outputDirectory: String = "",
+                    labelsFile: String = "",
                     dataMode: DataMode.Value = DataMode.Local,
                     randomSampling: Option[Int] = None,
                     artifacts: Set[Artifacts.Value] = Set.empty)
@@ -152,7 +168,7 @@ object App {
   implicit val dataModeRead: scopt.Read[DataMode.Value] = scopt.Read.reads(DataMode withName _)
 
   object Artifacts extends Enumeration {
-    val Dictionary, DocumentVectors, SimilarityMatrix, kNearest = Value
+    val Dictionary, DocumentVectors, SimilarityMatrix, kNearest, Results = Value
   }
 
   implicit val artifactsRead: scopt.Read[Artifacts.Value] = scopt.Read.reads(Artifacts withName _)

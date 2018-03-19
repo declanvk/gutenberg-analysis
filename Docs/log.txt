@@ -1,0 +1,20 @@
+Gutenberg Final Project - CSC 369
+
+Work log.
+
+
+Maxence Weyrich (approx. 12hr)
+   - Parsing books to make the dictionary
+   - Using dictionary to generate book vectors
+   - Finding the K-nearest neighbors
+   - Predicting subject based neighbors & similarity factor
+   - Using sampler file to choose which books to read
+
+Isaac Hintergardt (approx. 13hr)
+   - Random file selection from all english texts
+   - Finding number of unique words in each text
+   - Outlier analysis and Filtering
+
+Declan Kelly (approx. 16hr)
+   - Scripted ETL of Project Gutenberg Data
+   - Calculating cosine similarity between document vectors
