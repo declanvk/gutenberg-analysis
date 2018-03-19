@@ -14,3 +14,7 @@ Isaac Hintergardt (approx. 13hr)
    - Random file selection from all english texts
    - Finding number of unique words in each text
    - Outlier analysis and Filtering
+
+Declan Kelly (approx. 16hr)
+   - Scripted ETL of Project Gutenberg Data
+   - Calculating cosine similarity between document vectors
