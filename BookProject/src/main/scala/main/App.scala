@@ -98,7 +98,7 @@ object App {
         }
 
         //  dictionaryWordCount: RDD[(Word, WordCount)]
-        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc).persist
+        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
 
         //  dictionary: // RDD[(Word, WordIdx)]
         val dictionary: RDD[(String, Long)] = CreateDictionary.dictionary(dictionaryWordCount)
@@ -107,7 +107,7 @@ object App {
         val filesToProcess: RDD[(String, String)] = sc.wholeTextFiles(inputFilesDescriptor)
 
         //  documentVectors: RDD[(DocumentID, (WordIdx, WordCount))]
-        val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
+        val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary)
 
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
         val similarityMatrix: RDD[((Int, Int), Float)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
@@ -115,20 +115,23 @@ object App {
 
         val kNearest: RDD[(Int, List[(Int, Float)])] = CalculateSimilarity.findKNearest(similarityMatrix)
 
+        val timestamp: Long = System.currentTimeMillis / 1000
+        val stampedOutputDir = config.outputDirectory + s"run-${timestamp}/"
+
         if (config.artifacts.contains(Artifacts.Dictionary)) {
-          dictionaryWordCount.saveAsTextFile(config.outputDirectory + "dictionaryWordCount/")
+          dictionaryWordCount.saveAsTextFile(stampedOutputDir + "dictionaryWordCount/")
         }
 
         if (config.artifacts.contains(Artifacts.DocumentVectors)) {
-          documentVectors.groupByKey.saveAsTextFile(config.outputDirectory + "documentVectors/")
+          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir + "documentVectors/")
         }
 
         if (config.artifacts.contains(Artifacts.SimilarityMatrix)) {
-          similarityMatrix.saveAsTextFile(config.outputDirectory + "similarityMatrix/")
+          similarityMatrix.saveAsTextFile(stampedOutputDir + "similarityMatrix/")
         }
 
         if (config.artifacts.contains(Artifacts.kNearest)) {
-          kNearest.coalesce(1).saveAsTextFile(config.outputDirectory + "kNearest/")
+          kNearest.coalesce(1).saveAsTextFile(stampedOutputDir + "kNearest/")
         }
       }
     }
