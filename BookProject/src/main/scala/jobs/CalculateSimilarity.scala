@@ -15,7 +15,7 @@ object CalculateSimilarity {
     def calculateDotProduct(documentVectors: RDD[(Int, (Long, Int))]): RDD[((Int, Int), Long)] = {
         val rearrangedVectors = documentVectors.map {
             case (documentID, (wordIndex, wordCount)) => (wordIndex, (documentID, wordCount.toLong))
-        }.persist
+        }
 
         rearrangedVectors
             .join(rearrangedVectors) // RDD[(WordIdx, ((DocumentID_A, WordCount_A), (DocumentID_B, WordCount_B)))]
