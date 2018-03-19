@@ -1,0 +1,7 @@
+Gutenberg Final Project - CSC 369
+
+Justification for Using Hadoop
+
+There are a lot of public domain books in Project Guttenberg. For our project we only used texts that were in english. Unfortunatley, that still left arround fourteen gigs of data for our project, so it was necesary for us to use hadoop to distribute the processes. Parallelizing the data allowed us to run the jobs in a reasonable ammount of time.
+
+Hadoop was necessary for us because of the sheer size of our data set. The operations we conducted caused the data set to increase in size at an O(n^2) rate. For us, this means that reading through all the books would be impossible to complete on a single machine. In fact, according to our calculations, using the current cluster to parse through 35,000 books (the original data set), it would take 240 days to complete.

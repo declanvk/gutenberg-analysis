@@ -48,6 +48,10 @@ The data directory contains some pieces of permanent data, but is mostly filled 
 
 This directory contains the logs for the amount of work each person completed, some reasoning behind our methodology. We explain why we chose Hadoop and Spark, how the internal of our spark programs work, and some results.
 
+* Working time log - [`Docs/log.txt`](Docs/log.txt)
+* Explanation of Scala code internals - [`Docs/internals.txt`](Docs/internals.txt)
+* Justification for using Hadoop - [`Docs/hadoop-justification.txt`](Docs/hadoop-justification.txt)
+
 ## Spark Code (`BookProject/`)
 
 This directory contains our Spark Scala code, the main engine behind the processing our of data. 
@@ -55,6 +59,10 @@ This directory contains our Spark Scala code, the main engine behind the process
 ## Notebook Analysis (`analysis/`)
 
 Throughtout our project we had to make decisions based on the characteristics of our data. We use Jupyter Notebooks to visualize and experiment with our data at different stages of our process. These notebooks should provide some insight into our methods.
+
+* Analysis of Project Gutenberg data catalog - [`analysis/CatalogAnalysis.ipynb`](analysis/CatalogAnalysis.ipynb)
+* Analysis of unique words across all documents - [`analysis/Filtering.ipynb`](analysis/Filtering.ipynb)
+* Future experimental results - [`analysis/Results.ipynb`](analysis/Results.ipynb)
 
 ## Authors
 
