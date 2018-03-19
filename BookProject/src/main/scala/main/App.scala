@@ -145,7 +145,7 @@ object App {
         }
 
         if (config.artifacts.contains(Artifacts.Results)) {
-          results.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("results").toString)
+          results.coalesce(1).saveAsTextFile(stampedOutputDir + "results")
         }
 
       }
