@@ -9,3 +9,8 @@ Maxence Weyrich (approx. 12hr)
    - Finding the K-nearest neighbors
    - Predicting subject based neighbors & similarity factor
    - Using sampler file to choose which books to read
+
+Isaac Hintergardt (approx. 13hr)
+   - Random file selection from all english texts
+   - Finding number of unique words in each text
+   - Outlier analysis and Filtering
