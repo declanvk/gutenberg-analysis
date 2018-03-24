@@ -1,15 +1,21 @@
-#![feature(alloc, box_syntax, nll, ascii_ctype, entry_and_modify)]
+#![feature(box_syntax, nll, ascii_ctype, entry_and_modify)]
 
-extern crate alloc;
 #[macro_use]
 extern crate clap;
 extern crate env_logger;
 #[macro_use]
 extern crate error_chain;
 extern crate futures;
+extern crate indicatif;
+#[macro_use]
+extern crate itertools;
 #[macro_use]
 extern crate log;
+extern crate rayon;
 extern crate rust_stemmers;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 
 mod sparse_vectors;

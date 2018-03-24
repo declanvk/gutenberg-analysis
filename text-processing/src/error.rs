@@ -5,6 +5,7 @@ error_chain! {
         Clap(::clap::Error);
         Send(::futures::channel::mpsc::SendError);
         Serde(::serde_json::Error);
+        ParseInt(::std::num::ParseIntError);
     }
 
     errors {
