@@ -20,6 +20,7 @@ extern crate serde_json;
 
 mod sparse_vector;
 mod dictionary;
+mod document_vectors;
 mod error;
 
 use clap::AppSettings;
@@ -29,11 +30,13 @@ fn main() {
 
     let matches = app_from_crate!()
         .settings(&[AppSettings::SubcommandRequiredElseHelp])
-        .subcommand(make_dictionary::get_subcommand())
+        .subcommand(dictionary::get_subcommand())
+        .subcommand(document_vectors::get_subcommand())
         .get_matches();
 
     let result = match matches.subcommand() {
-        ("gen-dictionary", Some(args)) => make_dictionary::execute_subcommand(args),
+        ("dictionary", Some(args)) => dictionary::execute_subcommand(args),
+        ("doc-vectors", Some(args)) => document_vectors::execute_subcommand(args),
         _ => Ok(()),
     };
 
