@@ -1,22 +1,19 @@
-use alloc::raw_vec::RawVec;
-use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::mem;
-use std::ptr;
-use std::fmt;
 use std::ops::Index;
 use std::iter::{Extend, Iterator};
+use std::slice;
 
+#[derive(Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct SparseVector<E> {
     // Dimension of the vector
     size: usize,
     // Number of non-zero elements
     nnz: usize,
     // Non-zero elements
-    data: RawVec<E>,
+    data: Vec<E>,
     // Indices of non-zero elements
-    index: RawVec<u32>,
+    index: Vec<u32>,
     // Capacity of data and index
-    capacity: usize,
     default: E,
 }
 
@@ -25,9 +22,8 @@ impl<E> SparseVector<E> {
         SparseVector {
             size,
             nnz: 0,
-            data: RawVec::new(),
-            index: RawVec::new(),
-            capacity: 0,
+            data: Vec::new(),
+            index: Vec::new(),
             default,
         }
     }
@@ -36,26 +32,18 @@ impl<E> SparseVector<E> {
         SparseVector {
             size,
             nnz: 0,
-            data: RawVec::with_capacity(capacity),
-            index: RawVec::with_capacity(capacity),
-            capacity,
+            data: Vec::with_capacity(capacity),
+            index: Vec::with_capacity(capacity),
             default,
         }
     }
 
     pub fn contains(&self, index: u32) -> bool {
-        let index_slice: &[u32] = unsafe { self.index_slice() };
-
-        match index_slice.binary_search(&index) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.get_internal_index(index).is_some()
     }
 
     pub fn get_internal_index(&self, index: u32) -> Option<usize> {
-        let index_slice: &[u32] = unsafe { self.index_slice() };
-
-        match index_slice.binary_search(&index) {
+        match self.index.binary_search(&index) {
             Ok(idx) => Some(idx),
             Err(_) => None,
         }
@@ -63,69 +51,44 @@ impl<E> SparseVector<E> {
 
     pub fn get(&self, index: u32) -> Option<&E> {
         match self.get_internal_index(index) {
-            Some(internal_idx) => {
-                let data_slice = unsafe { self.data_slice() };
-
-                Some(&data_slice[internal_idx])
-            }
+            Some(internal_idx) => Some(&self.data[internal_idx]),
             None => None,
         }
     }
 
     pub fn get_mut(&mut self, index: u32) -> Option<&mut E> {
         match self.get_internal_index(index) {
-            Some(internal_idx) => {
-                let data_slice = unsafe { self.data_slice_mut() };
-
-                Some(&mut data_slice[internal_idx])
-            }
+            Some(internal_idx) => Some(&mut self.data[internal_idx]),
             None => None,
         }
     }
 
     pub fn insert(&mut self, index: u32, elem: E) -> Option<E> {
+        self.insert_with_merge(index, elem, &mut |old_elem, mut new_elem| {
+            mem::swap(old_elem, &mut new_elem);
+
+            new_elem
+        })
+    }
+
+    pub fn insert_with_merge<F>(&mut self, index: u32, elem: E, merge: &mut F) -> Option<E>
+    where
+        F: FnMut(&mut E, E) -> E,
+    {
         assert!(index < self.size as u32);
 
-        if self.nnz == self.capacity && self.capacity != self.size {
-            if 2 * self.capacity > self.size {
-                let needed_cap = self.size - self.capacity;
-
-                self.data.reserve_exact(self.capacity, needed_cap);
-                self.index.reserve_exact(self.capacity, needed_cap);
-                self.capacity = self.size;
-            } else {
-                self.data.double();
-                self.index.double();
-                self.capacity *= 2;
-            }
-        }
-
-        let index_slice: &mut [u32] = unsafe { self.index_slice_mut() };
-        match index_slice.binary_search(&index) {
+        match self.index.binary_search(&index) {
             Ok(idx) => {
                 // Index found in list
-                let data_slice: &mut [E] = unsafe { self.data_slice_mut() };
-                let old_value = mem::replace(&mut data_slice[idx], elem);
+                let old_value = merge(self.data.get_mut(idx).unwrap(), elem);
 
                 Some(old_value)
             }
             Err(idx) => {
                 // Index not found in list
-                debug_assert!(self.capacity != self.size);
-                let data_slice: &mut [E] = unsafe { self.data_slice_mut() };
-
-                unsafe {
-                    let index_ptr = index_slice.as_mut_ptr().offset(idx as isize);
-                    let data_ptr = data_slice.as_mut_ptr().offset(idx as isize);
-
-                    // Shift everything over to make space. (Duplicating the
-                    // `index`th element into two consecutive places.)
-                    ptr::copy(index_ptr, index_ptr.offset(1), self.nnz - idx as usize);
-                    ptr::copy(data_ptr, data_ptr.offset(1), self.nnz - idx as usize);
-
-                    ptr::write(index_ptr, index);
-                    ptr::write(data_ptr, elem);
-                }
+                debug_assert!(self.index.len() != self.size);
+                self.data.insert(idx, elem);
+                self.index.insert(idx, index);
 
                 self.nnz += 1;
 
@@ -134,17 +97,27 @@ impl<E> SparseVector<E> {
         }
     }
 
+    pub fn extend_with_merge<T, F>(&mut self, iter: T, mut merge: F)
+    where
+        T: IntoIterator<Item = (u32, E)>,
+        F: FnMut(&mut E, E) -> E,
+    {
+        for (index, elem) in iter {
+            self.insert_with_merge(index, elem, &mut merge);
+        }
+    }
+
     pub fn zip_nonzero<'a, 'b, B: 'b>(
         &'a self,
         other: &'b SparseVector<B>,
     ) -> NonZeroElemZipIter<'a, 'b, E, B> {
         NonZeroElemZipIter {
-            index_slice_a: unsafe { self.index_slice() },
-            data_slice_a: unsafe { self.data_slice() },
+            index_slice_a: self.index.as_slice(),
+            data_slice_a: self.data.as_slice(),
             ptr_a: 0,
 
-            index_slice_b: unsafe { other.index_slice() },
-            data_slice_b: unsafe { other.data_slice() },
+            index_slice_b: other.index.as_slice(),
+            data_slice_b: other.data.as_slice(),
             ptr_b: 0,
         }
     }
@@ -154,30 +127,22 @@ impl<E> SparseVector<E> {
         other: &'b SparseVector<B>,
     ) -> NonZeroPairZipIter<'a, 'b, E, B> {
         NonZeroPairZipIter {
-            index_slice_a: unsafe { self.index_slice() },
-            data_slice_a: unsafe { self.data_slice() },
+            index_slice_a: self.index.as_slice(),
+            data_slice_a: self.data.as_slice(),
             ptr_a: 0,
 
-            index_slice_b: unsafe { other.index_slice() },
-            data_slice_b: unsafe { other.data_slice() },
+            index_slice_b: other.index.as_slice(),
+            data_slice_b: other.data.as_slice(),
             ptr_b: 0,
         }
     }
 
-    unsafe fn data_slice(&self) -> &[E] {
-        from_raw_parts(self.data.ptr(), self.nnz)
-    }
-
-    unsafe fn data_slice_mut(&self) -> &mut [E] {
-        from_raw_parts_mut(self.data.ptr(), self.nnz)
-    }
-
-    unsafe fn index_slice(&self) -> &[u32] {
-        from_raw_parts(self.index.ptr(), self.nnz)
-    }
-
-    unsafe fn index_slice_mut(&self) -> &mut [u32] {
-        from_raw_parts_mut(self.index.ptr(), self.nnz)
+    pub fn iter<'a>(&'a self) -> Iter<'a, E> {
+        Iter {
+            index_slice: self.index.as_slice(),
+            data_slice: self.data.as_slice(),
+            ptr: 0,
+        }
     }
 }
 
@@ -192,23 +157,33 @@ impl<E> Index<u32> for SparseVector<E> {
     }
 }
 
-impl<E> fmt::Debug for SparseVector<E>
-where
-    E: fmt::Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {
-            f.debug_list()
-                .entries(self.index_slice().iter().zip(self.data_slice().iter()))
-                .finish()
-        }
-    }
-}
-
 impl<E> Extend<(u32, E)> for SparseVector<E> {
     fn extend<T: IntoIterator<Item = (u32, E)>>(&mut self, iter: T) {
         for (index, elem) in iter {
             self.insert(index, elem);
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Iter<'a, E: 'a> {
+    index_slice: &'a [u32],
+    data_slice: &'a [E],
+    ptr: usize,
+}
+
+impl<'a, E> Iterator for Iter<'a, E> {
+    type Item = (u32, &'a E);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ptr >= self.index_slice.len() {
+            None
+        } else {
+            let result = (self.index_slice[self.ptr], &self.data_slice[self.ptr]);
+            self.ptr += 1;
+
+            Some(result)
         }
     }
 }

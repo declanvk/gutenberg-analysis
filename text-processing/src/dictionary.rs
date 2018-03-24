@@ -13,7 +13,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use serde_json;
 
@@ -21,7 +21,7 @@ pub fn get_subcommand<'a, 'b>() -> App<'a, 'b>
 where
     'a: 'b,
 {
-    SubCommand::with_name("gen-dictionary")
+    SubCommand::with_name("dictionary")
         .about("generate dictionary from text corpus")
         .version("0.1")
         .author("Declan Kelly. <dkelly.home@gmail.com>")
@@ -61,7 +61,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
     info!("Stopwords file: {:?}", stopwords_path);
 
     let texts_path = Path::new(&texts_path_name);
-    if !Path::new(&texts_path_name).exists() {
+    if !texts_path.exists() {
         return Err(ErrorKind::InvalidInput("Input texts folder does not exist.".into()).into());
     }
 
@@ -69,7 +69,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         return Err(ErrorKind::InvalidInput("Stopwords file does not exist".into()).into());
     }
 
-    let en_stemmer = Arc::new(Mutex::new(Stemmer::create(Algorithm::English)));
+    let en_stemmer = Arc::new(Stemmer::create(Algorithm::English));
 
     let mut pool = ThreadPoolBuilder::new()
         .name_prefix("generate-dictionary")
@@ -79,7 +79,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
 
     let (sender, reciever) = mpsc::channel::<PathBuf>(10);
 
-    let stopwords = Arc::new(Mutex::new(read_stopwords(stopwords_path)?));
+    let stopwords = Arc::new(read_stopwords(stopwords_path)?);
 
     let texts_list = iter_result(texts_path.read_dir()?)
         .map_err(Error::from)
@@ -102,8 +102,8 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
             Ok(contents)
         })
         .and_then(move |contents: String| {
-            let stemmer = stemmer_copy.lock().unwrap();
-            let local_stopwords = stopwords_copy.lock().unwrap();
+            let stemmer = &stemmer_copy;
+            let local_stopwords = &stopwords_copy;
 
             let words: HashMap<String, u32> = contents
                 .to_lowercase()

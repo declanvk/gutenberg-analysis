@@ -18,8 +18,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-mod sparse_vectors;
-mod make_dictionary;
+mod sparse_vector;
+mod dictionary;
 mod error;
 
 use clap::AppSettings;
