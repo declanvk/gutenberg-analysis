@@ -1,7 +1,7 @@
 use std::mem;
 use std::ops::Index;
-use std::iter::{Extend, Iterator};
-use std::slice;
+use std::iter::{Extend, Iterator, Zip};
+use std::vec::IntoIter;
 
 #[derive(Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct SparseVector<E> {
@@ -107,26 +107,11 @@ impl<E> SparseVector<E> {
         }
     }
 
-    pub fn zip_nonzero<'a, 'b, B: 'b>(
-        &'a self,
-        other: &'b SparseVector<B>,
-    ) -> NonZeroElemZipIter<'a, 'b, E, B> {
-        NonZeroElemZipIter {
-            index_slice_a: self.index.as_slice(),
-            data_slice_a: self.data.as_slice(),
-            ptr_a: 0,
-
-            index_slice_b: other.index.as_slice(),
-            data_slice_b: other.data.as_slice(),
-            ptr_b: 0,
-        }
-    }
-
     pub fn zip_nonzero_pairs<'a, 'b, B: 'b>(
         &'a self,
         other: &'b SparseVector<B>,
-    ) -> NonZeroPairZipIter<'a, 'b, E, B> {
-        NonZeroPairZipIter {
+    ) -> NonZeroPairs<'a, 'b, E, B> {
+        NonZeroPairs {
             index_slice_a: self.index.as_slice(),
             data_slice_a: self.data.as_slice(),
             ptr_a: 0,
@@ -141,6 +126,14 @@ impl<E> SparseVector<E> {
         Iter {
             index_slice: self.index.as_slice(),
             data_slice: self.data.as_slice(),
+            ptr: 0,
+        }
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, E> {
+        IterMut {
+            index_slice: self.index.as_slice(),
+            data_slice: self.data.as_mut(),
             ptr: 0,
         }
     }
@@ -189,50 +182,60 @@ impl<'a, E> Iterator for Iter<'a, E> {
 }
 
 #[derive(Debug)]
-pub struct NonZeroElemZipIter<'a, 'b, A: 'a, B: 'b> {
-    index_slice_a: &'a [u32],
-    data_slice_a: &'a [A],
-    ptr_a: usize,
-
-    index_slice_b: &'b [u32],
-    data_slice_b: &'b [B],
-    ptr_b: usize,
+pub struct IterMut<'a, E: 'a> {
+    index_slice: &'a [u32],
+    data_slice: &'a mut [E],
+    ptr: usize,
 }
 
-impl<'a, 'b, A: 'a, B: 'b> Iterator for NonZeroElemZipIter<'a, 'b, A, B> {
-    type Item = (Option<&'a A>, Option<&'b B>);
+impl<'a, E> Iterator for IterMut<'a, E> {
+    type Item = (u32, &'a mut E);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr_a >= self.index_slice_a.len() || self.ptr_b >= self.index_slice_b.len() {
+        if self.ptr >= self.index_slice.len() {
             None
         } else {
-            let index_a = self.index_slice_a[self.ptr_a];
-            let index_b = self.index_slice_b[self.ptr_b];
+            let result = (self.index_slice[self.ptr], &mut self.data_slice[self.ptr]);
+            self.ptr += 1;
 
-            if index_a == index_b {
-                let value_a = &self.data_slice_a[self.ptr_a];
-                let value_b = &self.data_slice_b[self.ptr_b];
-
-                self.ptr_a += 1;
-                self.ptr_b += 1;
-                Some((Some(value_a), Some(value_b)))
-            } else if index_a < index_b {
-                let value_a = &self.data_slice_a[self.ptr_a];
-
-                self.ptr_a += 1;
-                Some((Some(value_a), None))
-            } else {
-                let value_b = &self.data_slice_b[self.ptr_b];
-
-                self.ptr_b += 1;
-                Some((None, Some(value_b)))
-            }
+            Some(result)
         }
     }
 }
 
+impl<E> IntoIterator for SparseVector<E> {
+    type Item = (u32, E);
+    type IntoIter = Zip<IntoIter<u32>, IntoIter<E>>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.index.into_iter().zip(self.data.into_iter())
+    }
+}
+
+impl<'a, E: 'a> IntoIterator for &'a SparseVector<E> {
+    type Item = (u32, &'a E);
+    type IntoIter = Iter<'a, E>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, E: 'a> IntoIterator for &'a mut SparseVector<E> {
+    type Item = (u32, &'a mut E);
+    type IntoIter = IterMut<'a, E>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 #[derive(Debug)]
-pub struct NonZeroPairZipIter<'a, 'b, A: 'a, B: 'b> {
+pub struct NonZeroPairs<'a, 'b, A: 'a, B: 'b> {
     index_slice_a: &'a [u32],
     data_slice_a: &'a [A],
     ptr_a: usize,
@@ -242,7 +245,7 @@ pub struct NonZeroPairZipIter<'a, 'b, A: 'a, B: 'b> {
     ptr_b: usize,
 }
 
-impl<'a, 'b, A: 'a, B: 'b> Iterator for NonZeroPairZipIter<'a, 'b, A, B> {
+impl<'a, 'b, A: 'a, B: 'b> Iterator for NonZeroPairs<'a, 'b, A, B> {
     type Item = (&'a A, &'b B);
 
     fn next(&mut self) -> Option<Self::Item> {
