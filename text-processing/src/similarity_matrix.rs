@@ -1,7 +1,7 @@
 use error::{Error, ErrorKind, Result};
 use sparse_vector::SparseVector;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, Arg, ArgGroup, ArgMatches, SubCommand};
 
 use futures::executor::ThreadPoolBuilder;
 use futures::stream::iter_result;
@@ -12,9 +12,9 @@ use std::path::{Path, PathBuf};
 use std::collections::{HashMap, HashSet};
 use std::fs::{DirBuilder, File};
 use std::sync::Arc;
+use std::collections::BinaryHeap;
 
 use rayon::prelude::*;
-use rayon::iter::split;
 
 use serde_json;
 
@@ -52,6 +52,26 @@ where
                 .value_name("output-folder")
                 .help("path of output folder"),
         )
+        .arg(
+            Arg::with_name("chunk-size-limit")
+                .short("l")
+                .long("limit")
+                .value_name("chunk-limit")
+                .help("limit of output chunk size"),
+        )
+        .arg(
+            Arg::with_name("num-chunks")
+                .short("c")
+                .long("chunks")
+                .value_name("num-chunks")
+                .help("number of chunks"),
+        )
+        .group(
+            ArgGroup::with_name("chunks")
+                .args(&["chunk-size-limit", "num-chunks"])
+                .multiple(false)
+                .required(true),
+        )
 }
 
 pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
@@ -76,37 +96,67 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
     info!("Creating output folder recursively.");
     DirBuilder::new().recursive(true).create(&output_path)?;
 
+    info!("Loading whitelist.");
     let whitelist = Arc::new(load_whitelist(whitelist_path)?);
-    info!("Loaded whitelist");
 
+    info!("Loading all document vectors");
     let all_document_vectors =
         load_all_document_vectors(Arc::clone(&whitelist), &document_vectors_path)?;
-    info!("Loaded all document vectors");
 
+    info!("Sorting whitelist");
     let mut sorted_whitelist: Vec<_> = whitelist.par_iter().cloned().collect();
     sorted_whitelist.par_sort();
-    info!("Sorted whitelist");
 
-    let cartesian_product = CartesianProduct {
-        rows: &sorted_whitelist,
-        columns: &sorted_whitelist,
-        limit: 1000,
+    info!("Generating whitelist chunks: ");
+    let all_pair_chunks: Vec<_> = if matches.is_present("chunk-size-limit") {
+        info!("Using maximum size restriction");
+        let limit = value_t!(matches, "chunk-size-limit", usize)?;
+
+        let cartesian_product = CartesianProduct {
+            rows: &sorted_whitelist,
+            columns: &sorted_whitelist,
+            limit,
+        };
+
+        cartesian_product
+            .split_until_base()
+            .into_iter()
+            .map(|cartesian| {
+                iproduct!(
+                    cartesian.rows.iter().cloned(),
+                    cartesian.columns.iter().cloned()
+                ).collect::<Vec<_>>()
+            })
+            .collect()
+    } else {
+        info!("Using fixed number of chunks");
+        let num_chunks = value_t!(matches, "num-chunks", usize)?;
+
+        let cartesian_product = CartesianProduct {
+            rows: &sorted_whitelist,
+            columns: &sorted_whitelist,
+            limit: 1,
+        };
+
+        cartesian_product
+            .split_until_num(num_chunks)
+            .into_iter()
+            .map(|cartesian| {
+                iproduct!(
+                    cartesian.rows.iter().cloned(),
+                    cartesian.columns.iter().cloned()
+                ).collect::<Vec<_>>()
+            })
+            .collect()
     };
 
-    let all_pair_chunks: Vec<_> = split(cartesian_product, split_cartesian_product)
-        .map(|cartesian| {
-            iproduct!(
-                cartesian.rows.iter().cloned(),
-                cartesian.columns.iter().cloned()
-            ).collect::<Vec<_>>()
-        })
-        .collect();
     info!(
-        "Finished generating all {} whitelist chunks",
+        "Splitting output matrix in {} chunks.",
         all_pair_chunks.len()
     );
 
-    let progress = ProgressBar::new(all_pair_chunks.len() as u64);
+    let similarity_progress = ProgressBar::new(all_pair_chunks.len() as u64);
+    info!("Computing similarity for chunks and writing each to file");
     for (idx, chunk) in all_pair_chunks.into_iter().enumerate() {
         let chunk_file = File::create(output_path.join(format!("chunk-{}.txt", idx)))?;
 
@@ -124,7 +174,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
             .collect_into_vec(&mut calculations);
 
         serde_json::to_writer(chunk_file, &calculations)?;
-        progress.tick();
+        similarity_progress.inc(1);
     }
 
     Ok(())
@@ -149,8 +199,8 @@ fn load_all_document_vectors(
 ) -> Result<HashMap<usize, SparseVector<u32>>> {
     let mut pool = ThreadPoolBuilder::new()
         .name_prefix("generate-dictionary")
-        .after_start(|idx| info!("Thread {} starting in IO pool", idx))
-        .before_stop(|idx| info!("Thread {} stopping in IO pool", idx))
+        .after_start(|idx| debug!("Thread {} starting in IO pool", idx))
+        .before_stop(|idx| debug!("Thread {} stopping in IO pool", idx))
         .create();
 
     let document_vectors_paths = iter_result(document_vectors_path.read_dir()?)
@@ -167,7 +217,7 @@ fn load_all_document_vectors(
             let document_vector: SparseVector<u32> = serde_json::from_reader(text)?;
 
             let text_id: usize = path.file_stem().unwrap().to_str().unwrap().parse()?;
-            info!("Text {}: read file contents", text_id);
+            debug!("Text {}: read file contents", text_id);
 
             Ok((text_id, document_vector))
         })
@@ -188,65 +238,116 @@ fn cosine_similarity(vector_a: &SparseVector<u32>, vector_b: &SparseVector<u32>)
     dot_product as f64 / (magnitude_a * magnitude_b) as f64
 }
 
-fn split_cartesian_product<'a, A: 'a + Clone>(
-    mut product: CartesianProduct<A>,
-) -> (CartesianProduct<A>, Option<CartesianProduct<A>>) {
-    if product.rows.len() < product.limit && product.columns.len() < product.limit {
-        info!(
-            "{}x{} under size limit",
-            product.rows.len(),
-            product.columns.len()
-        );
-
-        (product, None)
-    } else {
-        info!("Splitting {}x{}", product.rows.len(), product.columns.len());
-        if product.rows.len() > product.columns.len() {
-            let midpoint = product.rows.len() / 2;
-            let (left_rows, right_rows) = product.rows.split_at(midpoint);
-
-            product.rows = left_rows;
-
-            let new_product = CartesianProduct {
-                rows: right_rows,
-                columns: product.columns,
-                limit: product.limit,
-            };
-
-            info!(
-                "Into {}x{} and {}x{}",
-                product.rows.len(),
-                product.columns.len(),
-                new_product.rows.len(),
-                new_product.columns.len()
-            );
-            (product, Some(new_product))
-        } else {
-            let midpoint = product.columns.len() / 2;
-            let (left_columns, right_columns) = product.columns.split_at(midpoint);
-
-            product.columns = left_columns;
-
-            let new_product = CartesianProduct {
-                columns: right_columns,
-                rows: product.rows,
-                limit: product.limit,
-            };
-
-            info!(
-                "Into {}x{} and {}x{}",
-                product.rows.len(),
-                product.columns.len(),
-                new_product.rows.len(),
-                new_product.columns.len()
-            );
-            (product, Some(new_product))
-        }
-    }
-}
-
+#[derive(Debug, PartialOrd, PartialEq, Eq, Ord)]
 struct CartesianProduct<'a, A: 'a> {
     rows: &'a [A],
     columns: &'a [A],
     limit: usize,
+}
+
+impl<'a, A: 'a> CartesianProduct<'a, A>
+where
+    A: Ord,
+{
+    fn split_until_base(self) -> Vec<CartesianProduct<'a, A>> {
+        let mut queue = BinaryHeap::new();
+        let mut result = Vec::new();
+        queue.push(self);
+
+        while !queue.is_empty() {
+            let mut elem = queue.pop().unwrap();
+
+            let possible_child = elem.split();
+            match possible_child {
+                Some(new_child) => {
+                    queue.push(elem);
+                    queue.push(new_child);
+                }
+                None => result.push(elem),
+            }
+        }
+
+        result
+    }
+
+    fn split_until_num(self, limit: usize) -> Vec<CartesianProduct<'a, A>> {
+        let mut queue = BinaryHeap::new();
+        let mut result = Vec::with_capacity(limit);
+        queue.push(self);
+
+        while result.len() < limit && !queue.is_empty() {
+            let mut elem = queue.pop().unwrap();
+
+            let possible_child = elem.split();
+            match possible_child {
+                Some(new_child) => {
+                    queue.push(elem);
+                    queue.push(new_child);
+                }
+                None => result.push(elem),
+            }
+        }
+
+        result
+    }
+
+    fn size(&self) -> usize {
+        self.rows.len() * self.columns.len()
+    }
+
+    fn split(&mut self) -> Option<Self> {
+        if self.size() < self.limit {
+            debug!(
+                "{}x{} under size limit",
+                self.rows.len(),
+                self.columns.len()
+            );
+
+            None
+        } else {
+            debug!("Splitting {}x{}", self.rows.len(), self.columns.len());
+            if self.rows.len() > self.columns.len() {
+                let midpoint = self.rows.len() / 2;
+                let (left_rows, right_rows) = self.rows.split_at(midpoint);
+
+                self.rows = left_rows;
+
+                let new_product = CartesianProduct {
+                    rows: right_rows,
+                    columns: self.columns,
+                    limit: self.limit,
+                };
+
+                debug!(
+                    "Into {}x{} and {}x{}",
+                    self.rows.len(),
+                    self.columns.len(),
+                    new_product.rows.len(),
+                    new_product.columns.len()
+                );
+
+                Some(new_product)
+            } else {
+                let midpoint = self.columns.len() / 2;
+                let (left_columns, right_columns) = self.columns.split_at(midpoint);
+
+                self.columns = left_columns;
+
+                let new_product = CartesianProduct {
+                    columns: right_columns,
+                    rows: self.rows,
+                    limit: self.limit,
+                };
+
+                debug!(
+                    "Into {}x{} and {}x{}",
+                    self.rows.len(),
+                    self.columns.len(),
+                    new_product.rows.len(),
+                    new_product.columns.len()
+                );
+                Some(new_product)
+            }
+        }
+    }
 }
