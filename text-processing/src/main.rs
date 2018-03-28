@@ -11,6 +11,7 @@ extern crate indicatif;
 extern crate itertools;
 #[macro_use]
 extern crate log;
+extern crate num_traits;
 extern crate rayon;
 extern crate rust_stemmers;
 extern crate serde;
@@ -23,6 +24,7 @@ mod dictionary;
 mod document_vectors;
 mod similarity_matrix;
 mod error;
+mod tf_idf;
 
 use clap::AppSettings;
 
@@ -34,12 +36,14 @@ fn main() {
         .subcommand(dictionary::get_subcommand())
         .subcommand(document_vectors::get_subcommand())
         .subcommand(similarity_matrix::get_subcommand())
+        .subcommand(tf_idf::get_subcommand())
         .get_matches();
 
     let result = match matches.subcommand() {
         ("dictionary", Some(args)) => dictionary::execute_subcommand(args),
         ("doc-vectors", Some(args)) => document_vectors::execute_subcommand(args),
         ("similarity", Some(args)) => similarity_matrix::execute_subcommand(args),
+        ("tf-idf", Some(args)) => tf_idf::execute_subcommand(args),
         _ => Ok(()),
     };
 
