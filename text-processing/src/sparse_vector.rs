@@ -1,7 +1,10 @@
 use std::mem;
 use std::ops::Index;
-use std::iter::{Extend, Iterator, Zip};
+use std::iter::{Extend, Iterator, Sum, Zip};
 use std::vec::IntoIter;
+use std::collections::HashSet;
+
+use num_traits::real::Real;
 
 #[derive(Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct SparseVector<E> {
@@ -36,6 +39,14 @@ impl<E> SparseVector<E> {
             index: Vec::with_capacity(capacity),
             default,
         }
+    }
+
+    pub fn default(&self) -> &E {
+        &self.default
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
     }
 
     pub fn contains(&self, index: u32) -> bool {
@@ -136,6 +147,19 @@ impl<E> SparseVector<E> {
             data_slice: self.data.as_mut(),
             ptr: 0,
         }
+    }
+
+    pub fn key_set(&self) -> HashSet<u32> {
+        self.index.iter().cloned().collect()
+    }
+}
+
+impl<E> SparseVector<E>
+where
+    E: Real + Sum<E>,
+{
+    pub fn magnitude(&self) -> E {
+        self.data.iter().cloned().map(|x| x * x).sum::<E>().sqrt()
     }
 }
 
