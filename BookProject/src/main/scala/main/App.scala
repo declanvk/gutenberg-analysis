@@ -82,15 +82,6 @@ object App {
         val hadoopConfig: Configuration = sc.hadoopConfiguration
         hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
         hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
-        hadoopConfig.set("fs.s3a.impl", classOf[org.apache.hadoop.fs.s3a.S3AFileSystem].getName)
-
-        if (config.dataMode == DataMode.S3) {
-          val accessKeyID = System.getenv("AWS_ACCESS_KEY_ID")
-          val secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY")
-
-          hadoopConfig.set("fs.s3a.access.key", accessKeyID)
-          hadoopConfig.set("fs.s3a.secret.key", secretAccessKey)
-        }
 
         // Read stopwords from file and create a broadcast variable
         val stopwords = CreateDictionary.stopwords(config.stopWordFile, sc, config.dataMode)
@@ -115,7 +106,7 @@ object App {
         val labelFile = sc.textFile(config.labelsFile).map(x => (x.split(",", 2)(0).toInt, x.split(",", 2)(1))).groupByKey()
 
         //  dictionaryWordCount: RDD[(Word, WordCount)]
-        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc).persist
+        val dictionaryWordCount: RDD[(String, Long)] = CreateDictionary.dictionaryWordCount(inputFilesDescriptor, stopwords, sc)
 
         //  dictionary: // RDD[(Word, WordIdx)]
         val dictionary: RDD[(String, Long)] = CreateDictionary.dictionary(dictionaryWordCount)
@@ -124,7 +115,7 @@ object App {
         val filesToProcess: RDD[(String, String)] = sc.wholeTextFiles(inputFilesDescriptor)
 
         //  documentVectors: RDD[(DocumentID, (WordIdx, WordCount))]
-        val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary).persist
+        val documentVectors: RDD[(Int, (Long, Int))] = WordCountTexts.countWordsInTexts(filesToProcess, dictionary)
 
         //  similarityMatrix: RDD[((DocumentID_A, DocumentID_B), SimilarityMeasure)]
         val similarityMatrix: RDD[((Int, Int), Float)] = CalculateSimilarity.calculateSimilarityMatrix(documentVectors)
@@ -134,30 +125,27 @@ object App {
 
         val results: RDD[(Int, List[(String, Float)])] = CalculateSimilarity.findSubjectMatch(kNearest)
 
-        // Write output to files
         val timestamp: Long = System.currentTimeMillis / 1000
-        val stampedOutputDir = Paths.get(config.outputDirectory).resolve(s"run-${timestamp}").toFile
-        stampedOutputDir.mkdirs
-
+        val stampedOutputDir = config.outputDirectory + s"run-${timestamp}/"
 
         if (config.artifacts.contains(Artifacts.Dictionary)) {
-          dictionaryWordCount.saveAsTextFile(stampedOutputDir.toPath.resolve("dictionaryWordCount").toString)
+          dictionaryWordCount.saveAsTextFile(stampedOutputDir + "dictionaryWordCount/")
         }
 
         if (config.artifacts.contains(Artifacts.DocumentVectors)) {
-          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir.toPath.resolve("documentVectors").toString)
+          documentVectors.groupByKey.saveAsTextFile(stampedOutputDir + "documentVectors/")
         }
 
         if (config.artifacts.contains(Artifacts.SimilarityMatrix)) {
-          similarityMatrix.saveAsTextFile(stampedOutputDir.toPath.resolve("similarityMatrix").toString)
+          similarityMatrix.saveAsTextFile(stampedOutputDir + "similarityMatrix/")
         }
 
         if (config.artifacts.contains(Artifacts.kNearest)) {
-          kNearest.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("kNearest").toString)
+          kNearest.coalesce(1).saveAsTextFile(stampedOutputDir + "kNearest/")
         }
 
         if (config.artifacts.contains(Artifacts.Results)) {
-          results.coalesce(1).saveAsTextFile(stampedOutputDir.toPath.resolve("results").toString)
+          results.coalesce(1).saveAsTextFile(stampedOutputDir + "results")
         }
 
       }
