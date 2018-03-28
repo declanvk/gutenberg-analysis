@@ -13,6 +13,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::{DirBuilder, File};
 use std::sync::Arc;
 use std::collections::BinaryHeap;
+use std::fs::remove_dir_all;
 
 use rayon::prelude::*;
 
@@ -93,15 +94,25 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         return Err(ErrorKind::InvalidInput("Texts whitelist file does not exist.".into()).into());
     }
 
-    info!("Creating output folder recursively.");
+    if output_path.exists() {
+        info!("Removing existing output directory");
+        remove_dir_all(&output_path)?;
+    }
+
+    info!("Creating output folder recursively");
     DirBuilder::new().recursive(true).create(&output_path)?;
 
-    info!("Loading whitelist.");
+    info!("Loading whitelist");
     let whitelist = Arc::new(load_whitelist(whitelist_path)?);
 
     info!("Loading all document vectors");
     let all_document_vectors =
         load_all_document_vectors(Arc::clone(&whitelist), &document_vectors_path)?;
+
+    let all_document_magnitudes: HashMap<usize, f32> = all_document_vectors
+        .par_iter()
+        .map(|(id, doc)| (*id, doc.magnitude()))
+        .collect();
 
     info!("Sorting whitelist");
     let mut sorted_whitelist: Vec<_> = whitelist.par_iter().cloned().collect();
@@ -164,12 +175,24 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         chunk
             .into_par_iter()
             .map(|(idx_a, idx_b)| {
-                let document_a = &all_document_vectors[&idx_a];
-                let document_b = &all_document_vectors[&idx_b];
+                if idx_a == idx_b {
+                    (idx_a, idx_b, 1.0)
+                } else {
+                    let document_a = &all_document_vectors[&idx_a];
+                    let document_b = &all_document_vectors[&idx_b];
 
-                let similarity = cosine_similarity(document_a, document_b);
+                    let magnitude_a = &all_document_magnitudes[&idx_a];
+                    let magnitude_b = &all_document_magnitudes[&idx_b];
 
-                (idx_a, idx_b, similarity)
+                    let dot_product: f32 = document_a
+                        .zip_nonzero_pairs(&document_b)
+                        .map(|(a, b)| a * b)
+                        .sum();
+
+                    let similarity = dot_product / (magnitude_a * magnitude_b);
+
+                    (idx_a, idx_b, similarity)
+                }
             })
             .collect_into_vec(&mut calculations);
 
@@ -196,7 +219,7 @@ fn load_whitelist<P: AsRef<Path>>(whitelist_path: P) -> Result<HashSet<usize>> {
 fn load_all_document_vectors(
     whitelist_copy: Arc<HashSet<usize>>,
     document_vectors_path: &Path,
-) -> Result<HashMap<usize, SparseVector<u32>>> {
+) -> Result<HashMap<usize, SparseVector<f32>>> {
     let mut pool = ThreadPoolBuilder::new()
         .name_prefix("generate-dictionary")
         .after_start(|idx| debug!("Thread {} starting in IO pool", idx))
@@ -214,28 +237,16 @@ fn load_all_document_vectors(
     let document_vector_container = document_vectors_paths
         .and_then(|path: PathBuf| {
             let text: File = File::open(&path)?;
-            let document_vector: SparseVector<u32> = serde_json::from_reader(text)?;
+            let document_vector: SparseVector<f32> = serde_json::from_reader(text)?;
 
             let text_id: usize = path.file_stem().unwrap().to_str().unwrap().parse()?;
             debug!("Text {}: read file contents", text_id);
 
             Ok((text_id, document_vector))
         })
-        .collect::<HashMap<usize, SparseVector<u32>>>();
+        .collect::<HashMap<usize, SparseVector<f32>>>();
 
     pool.run(document_vector_container)
-}
-
-fn cosine_similarity(vector_a: &SparseVector<u32>, vector_b: &SparseVector<u32>) -> f64 {
-    let magnitude_a: u32 = vector_a.iter().map(|(_, x)| x * x).sum();
-    let magnitude_b: u32 = vector_b.iter().map(|(_, x)| x * x).sum();
-
-    let dot_product: u32 = vector_a
-        .zip_nonzero_pairs(&vector_b)
-        .map(|(a, b)| a * b)
-        .sum();
-
-    dot_product as f64 / (magnitude_a * magnitude_b) as f64
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Eq, Ord)]
