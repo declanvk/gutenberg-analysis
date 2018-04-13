@@ -141,14 +141,6 @@ impl<E> SparseVector<E> {
         }
     }
 
-    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, E> {
-        IterMut {
-            index_slice: self.index.as_slice(),
-            data_slice: self.data.as_mut(),
-            ptr: 0,
-        }
-    }
-
     pub fn key_set(&self) -> HashSet<u32> {
         self.index.iter().cloned().collect()
     }
@@ -205,29 +197,6 @@ impl<'a, E> Iterator for Iter<'a, E> {
     }
 }
 
-#[derive(Debug)]
-pub struct IterMut<'a, E: 'a> {
-    index_slice: &'a [u32],
-    data_slice: &'a mut [E],
-    ptr: usize,
-}
-
-impl<'a, E> Iterator for IterMut<'a, E> {
-    type Item = (u32, &'a mut E);
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr >= self.index_slice.len() {
-            None
-        } else {
-            let result = (self.index_slice[self.ptr], &mut self.data_slice[self.ptr]);
-            self.ptr += 1;
-
-            Some(result)
-        }
-    }
-}
-
 impl<E> IntoIterator for SparseVector<E> {
     type Item = (u32, E);
     type IntoIter = Zip<IntoIter<u32>, IntoIter<E>>;
@@ -245,16 +214,6 @@ impl<'a, E: 'a> IntoIterator for &'a SparseVector<E> {
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
-    }
-}
-
-impl<'a, E: 'a> IntoIterator for &'a mut SparseVector<E> {
-    type Item = (u32, &'a mut E);
-    type IntoIter = IterMut<'a, E>;
-
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
     }
 }
 
