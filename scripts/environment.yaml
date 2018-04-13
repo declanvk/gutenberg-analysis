@@ -16,3 +16,4 @@ dependencies:
 - SPARQLWrapper
 - scikit-learn
 - scikit
+- xarray
