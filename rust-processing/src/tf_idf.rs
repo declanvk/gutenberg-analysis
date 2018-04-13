@@ -4,15 +4,15 @@ use sparse_vector::SparseVector;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 use futures::executor::ThreadPoolBuilder;
-use futures::stream::iter_result;
 use futures::prelude::*;
+use futures::stream::iter_result;
 
+use std::collections::{HashMap, HashSet};
+use std::f64::EPSILON;
+use std::fs::{DirBuilder, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::collections::{HashMap, HashSet};
-use std::fs::{DirBuilder, File};
 use std::sync::Arc;
-use std::f64::EPSILON;
 
 use rayon::prelude::*;
 
@@ -88,18 +88,15 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
     let inverse_document_freq: HashMap<u32, u32> = all_document_vectors
         .par_iter()
         .map(|(_, document)| document.key_set())
-        .fold(
-            || HashMap::new(),
-            |mut acc: HashMap<u32, u32>, elem| {
-                for term in elem {
-                    *acc.entry(term).or_insert(0) += 1;
-                }
+        .fold(HashMap::new, |mut acc: HashMap<u32, u32>, elem| {
+            for term in elem {
+                *acc.entry(term).or_insert(0) += 1;
+            }
 
-                acc
-            },
-        )
+            acc
+        })
         .reduce(
-            || HashMap::new(),
+            HashMap::new,
             |mut a: HashMap<u32, u32>, b: HashMap<u32, u32>| {
                 for (key, value) in b {
                     *a.entry(key).or_insert(0) += value;
@@ -118,15 +115,16 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
             let new_vector_components = document
                 .into_iter()
                 .map(|(word_idx, raw_count)| {
-                    let weighted_count = raw_count as f64
-                        * (num_documents as f64 / inverse_document_freq[&word_idx] as f64).log10();
+                    let weighted_count = f64::from(raw_count)
+                        * (f64::from(num_documents) / f64::from(inverse_document_freq[&word_idx]))
+                            .log10();
                     (word_idx, weighted_count)
                 })
                 .filter(|&(_, weighted_count)| {
                     weighted_count < -epsilon || epsilon < weighted_count
                 });
 
-            let mut new_vec = SparseVector::new(size, default as f64);
+            let mut new_vec = SparseVector::new(size, f64::from(default));
 
             new_vec.extend(new_vector_components);
 

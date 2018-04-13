@@ -2,17 +2,17 @@ use error::{Error, ErrorKind, Result};
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use futures::executor::ThreadPoolBuilder;
-use futures::stream::iter_result;
-use futures::prelude::*;
 use futures::channel::mpsc;
+use futures::executor::ThreadPoolBuilder;
+use futures::prelude::*;
+use futures::stream::iter_result;
 
 use rust_stemmers::{Algorithm, Stemmer};
 
-use std::io::Read;
-use std::path::{Path, PathBuf};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use serde_json;
@@ -116,7 +116,6 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
                 .map(|w| stemmer.stem(&w).into_owned())
                 .filter(|w| !local_stopwords.contains(w))
                 .filter(|w| w.len() > 2)
-                .map(|w| w.into())
                 .fold(HashMap::new(), |mut acc, x| {
                     acc.entry(x).and_modify(|e| *e += 1).or_insert(1);
 
@@ -128,7 +127,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         .fold(
             HashMap::new(),
             |mut acc: HashMap<String, u32>, x: HashMap<String, u32>| {
-                for (word, count) in x.into_iter() {
+                for (word, count) in x {
                     acc.entry(word).and_modify(|e| *e += count).or_insert(count);
                 }
 

@@ -1,8 +1,8 @@
+use std::collections::HashSet;
+use std::iter::{Extend, Iterator, Sum, Zip};
 use std::mem;
 use std::ops::Index;
-use std::iter::{Extend, Iterator, Sum, Zip};
 use std::vec::IntoIter;
-use std::collections::HashSet;
 
 use num_traits::real::Real;
 
@@ -91,7 +91,7 @@ impl<E> SparseVector<E> {
         match self.index.binary_search(&index) {
             Ok(idx) => {
                 // Index found in list
-                let old_value = merge(self.data.get_mut(idx).unwrap(), elem);
+                let old_value = merge(&mut self.data[idx], elem);
 
                 Some(old_value)
             }
@@ -133,7 +133,7 @@ impl<E> SparseVector<E> {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a, E> {
+    pub fn iter(&self) -> Iter<E> {
         Iter {
             index_slice: self.index.as_slice(),
             data_slice: self.data.as_slice(),

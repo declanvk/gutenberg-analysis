@@ -19,11 +19,11 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-mod sparse_vector;
 mod dictionary;
 mod document_vectors;
-mod similarity_matrix;
 mod error;
+mod similarity_matrix;
+mod sparse_vector;
 mod tf_idf;
 
 use clap::AppSettings;
@@ -47,8 +47,7 @@ fn main() {
         _ => Ok(()),
     };
 
-    match result {
-        Err(reason) => error!("Error! Reason: {}", reason),
-        _ => {}
+    if let Err(reason) = result {
+        error!("Error! Reason: {}", reason);
     }
 }
