@@ -7,6 +7,7 @@ import re
 import json as js
 from functools import cmp_to_key
 import sys
+import progressbar
 
 SIMILARITY_ENTRY_REG = re.compile("^\((\d+),(\d+),(.*)\)$")
 
@@ -28,15 +29,13 @@ def load_chunk(chunk_path):
         
         matrix = np.empty(dtype='float32', shape=(dim_row, dim_column))
         for (r, c, s) in chunk:
-            if (r == c):
-                matrix[row_index[r], column_index[c]] = 1.0
-            else:
-                matrix[row_index[r], column_index[c]] = s
+            matrix[row_index[r], column_index[c]] = s
         
         return ((row_index, column_index), matrix.reshape((dim_row, dim_column)))
 
 def load_all_chunks(matrix, chunk_folder):
-    for path in chunk_folder.iterdir():
+    progress = progressbar.ProgressBar()
+    for path in progress(chunk_folder.iterdir()):
         ((row_index, column_index), chunk) = load_chunk(path)
 
         row_offset = document_index[row_index.index.min()]
