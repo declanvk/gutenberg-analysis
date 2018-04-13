@@ -91,7 +91,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         .name_prefix("generate-dictionary")
         .after_start(|idx| info!("Thread {} starting pool", idx))
         .before_stop(|idx| info!("Thread {} stopping in pool", idx))
-        .create();
+        .create()?;
 
     let stemmer_clone = Arc::clone(&en_stemmer);
     let dictionary_clone = Arc::clone(&dictionary);

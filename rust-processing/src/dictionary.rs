@@ -75,7 +75,7 @@ pub fn execute_subcommand<'a>(matches: &ArgMatches<'a>) -> Result<()> {
         .name_prefix("generate-dictionary")
         .after_start(|idx| info!("Thread {} starting pool", idx))
         .before_stop(|idx| info!("Thread {} stopping in pool", idx))
-        .create();
+        .create()?;
 
     let (sender, reciever) = mpsc::channel::<PathBuf>(10);
 

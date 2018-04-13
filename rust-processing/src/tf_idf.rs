@@ -170,7 +170,7 @@ fn load_all_document_vectors(
         .name_prefix("generate-dictionary")
         .after_start(|idx| debug!("Thread {} starting in IO pool", idx))
         .before_stop(|idx| debug!("Thread {} stopping in IO pool", idx))
-        .create();
+        .create()?;
 
     let document_vectors_paths = iter_result(document_vectors_path.read_dir()?)
         .map_err(Error::from)
